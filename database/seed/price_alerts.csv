@@ -1,0 +1,2 @@
+alert_id,user_id,instrument_id,target_price,direction,is_active,created_at
+pa-000001-0000-0000-0000-000000000001,11111111-1111-1111-1111-111111111111,11111111-aaaa-1111-aaaa-111111111111,200.00,ABOVE,TRUE,2026-01-01T04:00:00Z
