@@ -69,9 +69,14 @@ the transform quarantining bad rows.
 | What happened | Signal | Response |
 |---|---|---|
 | Quota exhausted | HTTP 429 (`Retry-After`) | `QuotaExhausted` → stop the batch, say so |
-| Bad request | other 4xx (401/404/400) | `BadRequest` → fail this symbol, continue others |
+| Data not ready yet | HTTP 202 / 503 (`Retry-After`) | honour the (bounded) hint, then `BackfillPending` → skip this symbol, re-run later |
+| Bad request | other 4xx (401/403/404/400) | `BadRequest` → fail this symbol, continue others |
 | Nothing arrived | connection error / timeout | retry with growing backoff, then `NetworkError` |
 | 200 with bad data | a missing/typed/impossible field | not HTTP; handed to `transform` (drop/quarantine) |
+
+The live `/candles/{symbol}` endpoint is called with ISO `from`/`to` dates and
+`interval=1d`; the compact `YYYY-MM` label (e.g. `2026-07`) is only the cache
+key, translated to the first/last day of that month per call.
 
 ## The six malformed-fixture defects and this transform's disposition
 

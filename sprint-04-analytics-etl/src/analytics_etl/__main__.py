@@ -20,7 +20,7 @@ from pathlib import Path
 from . import config as config_mod
 from .dashboard import build_dashboard
 from .extract import build_client, extract
-from .fauxnance_client import BadRequest, NetworkError, QuotaExhausted
+from .fauxnance_client import BackfillPending, BadRequest, NetworkError, QuotaExhausted
 from .load import load
 from .transform import transform
 
@@ -86,6 +86,10 @@ def run(range_label: str = config_mod.DEFAULT_RANGE) -> int:
         except BadRequest as exc:
             # other 4xx: fail this symbol, carry on with the rest.
             logger.error("skipping %s: %s", symbol, exc)
+            continue
+        except BackfillPending as exc:
+            # 202/503: data not ready yet; skip this symbol and re-run later.
+            logger.warning("skipping %s (not ready): %s", symbol, exc)
             continue
         except NetworkError as exc:
             logger.error("skipping %s after retries: %s", symbol, exc)
