@@ -31,10 +31,10 @@ echo "Applying schema migrations to ${TARGET_DB}"
 
 echo "Loading CSV seed files (aligned to DDL)"
 set -x
-$PSQL -d "$TARGET_DB" -c "\copy currencies(code,name) FROM 'seed/currencies.csv' CSV HEADER;"
+
 $PSQL -d "$TARGET_DB" -c "\copy users(user_id,email,password_hash,role,status,phone_number,date_of_birth,created_at,updated_at) FROM 'seed/users.csv' CSV HEADER;"
 $PSQL -d "$TARGET_DB" -c "\copy trading_accounts(account_id,user_id,account_number,cash_balance,created_at,updated_at) FROM 'seed/trading_accounts.csv' CSV HEADER;"
-$PSQL -d "$TARGET_DB" -c "\copy instruments(instrument_id,ticker,company_name,exchange,sector,is_active,created_at) FROM 'seed/instruments_new.csv' CSV HEADER;"
+$PSQL -d "$TARGET_DB" -c "\copy instruments(instrument_id,ticker,company_name,exchange,stocks,sector,is_active,created_at) FROM 'seed/instruments_new.csv' CSV HEADER;"
 $PSQL -d "$TARGET_DB" -c "\copy holdings(holding_id,account_id,instrument_id,quantity,average_buy_price,updated_at) FROM 'seed/holdings.csv' CSV HEADER;"
 $PSQL -d "$TARGET_DB" -c "\copy portfolio_snapshots(snapshot_id,account_id,portfolio_value,unrealized_pnl,snapshot_time) FROM 'seed/portfolio_snapshots.csv' CSV HEADER;"
 $PSQL -d "$TARGET_DB" -c "\copy orders(order_id,account_id,instrument_id,side,order_type,quantity,remaining_quantity,limit_price,status,created_at,updated_at) FROM 'seed/orders_new.csv' CSV HEADER;"
