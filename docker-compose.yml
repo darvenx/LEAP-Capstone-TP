@@ -1,0 +1,41 @@
+# Local orchestration for the Enterprise Trading Platform.
+#
+# Sprint 3/4 scope: only the operational database is a container. Kafka, the
+# Trade API, the executor and the auth service arrive in later sprints and slot
+# in here as siblings. The Python analytics ETL runs on the host, not in a
+# container (per the blueprint).
+#
+# One command brings the database up, migrated and seeded:
+#
+#     docker compose up -d
+#
+# Values come from the repository-root .env (see .env.example).
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: etp-postgres
+    env_file:
+      - .env
+    environment:
+      # postgres image reads these to create the initial database and superuser.
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      # The migrations + seed, mounted read-only as the init source of truth.
+      - ./sprint-03-trade-database:/sprint-03:ro
+      # The init hook that applies them on an empty volume, filename order.
+      - ./infra/postgres/initdb:/docker-entrypoint-initdb.d:ro
+      # Persistent data. Remove with `docker compose down -v` to rebuild.
+      - etp-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  etp-postgres-data:

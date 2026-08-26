@@ -1,3 +1,0 @@
-ledger_id,account_id,entry_type,reference_id,amount,created_at
-lllllll1-llll-llll-llll-llllllllllll,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa,INITIAL_BALANCE,,10000.00,2026-01-01T00:00:00Z
-lllllll2-llll-llll-llll-llllllllllll,aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa,BUY_TRADE,eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee,-1500.00,2026-01-01T00:30:00Z

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "analytics-etl"
+version = "0.1.0"
+description = "Sprint 4 analytics and ingestion pipeline for the Enterprise Trading Platform."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Instructional use only" }
+authors = [{ name = "Enterprise Trading Platform team" }]
+
+# Pinned floors chosen to live with for the rest of the programme. Sprint 7
+# extends this project rather than replacing it, so the set is deliberately small.
+dependencies = [
+    "requests>=2.31",
+    "pandas>=2.2",
+    "plotly>=5.22",
+    "python-dotenv>=1.0",
+    "duckdb>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+# A console script so a teammate can run the pipeline without reading the source.
+# `analytics-etl` and `python -m analytics_etl` are equivalent entry points.
+[project.scripts]
+analytics-etl = "analytics_etl.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

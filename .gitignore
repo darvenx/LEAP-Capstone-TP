@@ -1,0 +1,35 @@
+# Secrets and local configuration
+.env
+.env.local
+*.local.env
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# Analytics ETL: raw pulls (rebuildable, not fixtures) and the DuckDB store
+.cache/
+*.duckdb
+*.duckdb.wal
+
+# Databases and local dumps
+*.sqlite
+*.sqlite3
+*.db
+
+# IDEs and editors
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Operating system
+.DS_Store
+Thumbs.db
