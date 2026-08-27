@@ -1,4 +1,4 @@
--- 002_create_users.sql
+-- 002_create_tables.sql
 CREATE TABLE users
 (
     user_id UUID PRIMARY KEY

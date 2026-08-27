@@ -2,11 +2,14 @@
 
 ## Rebuild command
 
-From `database/`, run `TARGET_DATABASE=trade_db ./scripts/setup_db_and_seed.sh`.
-The script reads `TARGET_DATABASE`, falls back to `POSTGRES_DB` from the root
-`.env`, applies sorted migrations, then sorted SQL seed files. It passes
-`ON_ERROR_STOP=1` and never prompts; PostgreSQL credentials must come from the
-normal environment, `.pgpass`, or `PGSERVICE` configuration.
+From `database/`, run `.\scripts\setup_db_and_seed.ps1` in a VS Code
+PowerShell terminal. The script reads `TARGET_DATABASE`, falls back to
+`POSTGRES_DB`, applies sorted migrations, then sorted SQL seed files. It passes
+`ON_ERROR_STOP=1` and never prompts; PostgreSQL credentials must come from
+`PGPASSWORD`, `.pgpass`, or `PGSERVICE` configuration. For containerized local
+development, run `docker compose --env-file .\manifest.env up -d` from the
+repository root. The compose file mounts the canonical migrations and seeds
+through `infra/postgres/001_initialize.sql`.
 
 ## Historical trade data
 
