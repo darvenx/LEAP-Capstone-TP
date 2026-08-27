@@ -1,0 +1,12 @@
+# Local credentials and environment settings
+manifest.env
+
+# Python-generated files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local PostgreSQL data
+*.dump
+*.sql.backup
