@@ -41,7 +41,6 @@ Show the files in this order:
 
 Key points:
 
-- The numbered files provide stable, repeatable schema history.
 - Enums restrict roles, account states, order sides, order types, order states, and ledger entry types.
 - Primary keys identify rows and foreign keys protect relationships.
 - Money and prices use exact `NUMERIC` types instead of floating point.
@@ -67,50 +66,7 @@ code:
 - Holding quantities and average prices cannot be negative.
 - Ledger amounts cannot be zero and must have the correct sign for their entry type.
 
-## 5. Show the seed data
 
-Open `seed/001_core.sql`.
-
-The fixtures intentionally cover the required error paths:
-
-- Accounts in `ACTIVE`, `SUSPENDED`, and `CLOSED` states
-- An account with only a small cash balance
-- Equity, ETF, and crypto instruments
-- A delisted `BTC-USD` instrument
-- New, filled, rejected, and cancelled orders
-- A holding in the delisted instrument
-- Holdings that reconcile with filled orders
-- Cash ledger entries for buys, sells, and initial balances
-
-Run these checks in pgAdmin:
-
-```sql
-SELECT status, COUNT(*)
-FROM trading_accounts
-GROUP BY status
-ORDER BY status;
-
-SELECT status, COUNT(*)
-FROM orders
-GROUP BY status
-ORDER BY status;
-
-SELECT account_number, holder_name, status, cash_balance
-FROM trading_accounts
-ORDER BY account_number;
-
-SELECT i.ticker,
-       i.asset_class,
-       i.is_tradable,
-       h.quantity,
-       h.average_buy_price
-FROM holdings h
-JOIN instruments i ON i.instrument_id = h.instrument_id
-ORDER BY i.ticker;
-```
-
-Expected account states are `ACTIVE`, `SUSPENDED`, and `CLOSED`.
-Expected order states are `NEW`, `FILLED`, `REJECTED`, and `CANCELLED`.
 
 ## 6. Demonstrate idempotency and foreign-key rejection
 
@@ -140,14 +96,6 @@ Use these values:
 Account UUID: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
 Account number: ACC-1001
 Timestamp: 2026-02-01T00:00:00Z
-```
-
-Use single quotes around values in PostgreSQL:
-
-```sql
-'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-'ACC-1001'
-'2026-02-01T00:00:00Z'
 ```
 
 Explain each query:
@@ -180,61 +128,3 @@ so no additional index is needed for that query.
 Every extra index has a write cost because inserts and relevant updates must
 maintain it. The indexes were added only when tied to a named business query.
 
-Optional plan demonstration:
-
-```sql
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT *
-FROM orders
-WHERE account_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
-  AND status = 'NEW'
-ORDER BY created_at DESC;
-```
-
-## 9. Explain normalization and historical data
-
-Open `design/normalization.md` and `DESIGN.md`.
-
-Key points:
-
-- Users, accounts, instruments, orders, holdings, and ledger entries have separate responsibilities.
-- Foreign keys store relationships without repeating names and descriptions.
-- `cash_balance` and `holdings` are deliberate denormalized projections for fast dashboard reads.
-- The cash ledger and execution history remain available for reconciliation.
-- Future executed trades should be stored at one immutable row per execution.
-- Sprint 7 can extract executions incrementally using `(executed_at, execution_id)` as a high-water mark.
-- At larger volumes, execution history can be partitioned by month or quarter and archived according to retention policy.
-
-## 10. Explain how to rebuild
-
-The database can be rebuilt from migrations and seeds alone.
-
-For pgAdmin:
-
-1. Create an empty database named `trade_db`.
-2. Open Query Tool.
-3. Execute migrations `001` through `004` in filename order.
-4. Execute `seed/001_core.sql`.
-5. Run the verification queries.
-6. Run the failure tests.
-
-For a local PostgreSQL server from the VS Code PowerShell terminal:
-
-```powershell
-cd C:\Users\Administrator\Documents\LEAP-Capstone-TP
-.\setup-database.ps1
-```
-
-The script reads the local `manifest.env` settings and stops on the first
-failure. PostgreSQL credentials should not be displayed during the review.
-
-## 11. Closing statement
-
-The main design decisions are:
-
-1. Idempotency is enforced by a database unique constraint.
-2. Account and instrument lifecycle states are explicit and enforced.
-3. Terminal orders remain immutable and historical records are retained.
-4. Money and prices use exact numeric types.
-5. Current holdings and cash are fast projections that remain reconcilable from historical facts.
-6. Migrations, seed data, verification queries, and documentation provide a repeatable reviewable build.

@@ -1,7 +1,4 @@
--- The six named queries from the Sprint 3 brief.
-
 -- 1) All open orders for one account, newest first.
--- The current model has one non-terminal status: NEW.
 SELECT *
 FROM orders
 WHERE account_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
