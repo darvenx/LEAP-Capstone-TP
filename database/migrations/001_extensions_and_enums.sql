@@ -12,6 +12,19 @@ CREATE TYPE user_status AS ENUM (
     'CLOSED'
 );
 
+CREATE TYPE account_status AS ENUM (
+    'ACTIVE',
+    'SUSPENDED',
+    'CLOSED'
+);
+
+CREATE TYPE asset_class AS ENUM (
+    'EQUITY',
+    'ETF',
+    'CURRENCY_PAIR',
+    'CRYPTO_PAIR'
+);
+
 CREATE TYPE order_side AS ENUM (
     'BUY',
     'SELL'

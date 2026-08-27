@@ -1,2 +1,0 @@
-notification_id,user_id,title,message,status,sent_at,provider_reference,created_at
-notif-000001-0000-0000-0000-000000000001,11111111-1111-1111-1111-111111111111,Price Alert,Your price alert fired,PENDING,,email-service-123,2026-01-01T04:05:00Z

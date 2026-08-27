@@ -19,7 +19,7 @@ LIMIT 50;
 SELECT h.account_id,
 	   h.instrument_id,
 	   i.ticker,
-	   i.company_name,
+	i.display_name,
 	   h.quantity,
 	   h.average_buy_price
 FROM holdings AS h
@@ -42,8 +42,8 @@ FROM trading_accounts
 WHERE account_number = $1;
 
 -- 6) Filled orders for one account, oldest first, with running cash committed
--- and rank by order value within the instrument. The current schema stores a
--- stated limit price rather than a separate execution price.
+-- and rank by order value within its instrument. Cash commitment comes from
+-- the signed cash ledger, which also supports market orders.
 WITH filled_orders AS (
 	SELECT o.order_id,
 		   o.account_id,
@@ -53,14 +53,13 @@ WITH filled_orders AS (
 		   o.limit_price,
 		   o.created_at,
 		   o.quantity * COALESCE(o.limit_price, 0) AS order_value,
-		   CASE
-			   WHEN o.side = 'BUY'
-			   THEN o.quantity * COALESCE(o.limit_price, 0)
-			   ELSE 0
-		   END AS cash_committed
+		   COALESCE(SUM(cl.amount), 0) AS cash_committed
 	FROM orders AS o
+	LEFT JOIN cash_ledger AS cl ON cl.reference_id = o.order_id
 	WHERE o.account_id = $1
 	  AND o.status = 'FILLED'
+	GROUP BY o.order_id, o.account_id, o.instrument_id, o.side,
+			 o.quantity, o.limit_price, o.created_at
 )
 SELECT filled_orders.*,
 	   SUM(cash_committed) OVER (

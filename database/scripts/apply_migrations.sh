@@ -9,9 +9,12 @@ if [ -z "$TARGET_DB" ]; then
   exit 2
 fi
 
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$SCRIPT_DIR/.."
+
 for f in migrations/*.sql; do
   echo "Applying $f to $TARGET_DB"
-  $PSQL_CMD "$TARGET_DB" -f "$f"
+  "$PSQL_CMD" -w -v ON_ERROR_STOP=1 "$TARGET_DB" -f "$f"
 done
 
 echo "Migrations applied successfully"

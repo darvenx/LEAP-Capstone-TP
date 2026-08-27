@@ -1,19 +1,15 @@
 -- 014_create_indexes.sql
-CREATE INDEX IF NOT EXISTS idx_orders_account
-ON orders(account_id);
+CREATE INDEX IF NOT EXISTS idx_orders_account_status_created
+ON orders(account_id, status, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_orders_status
-ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_account_created
+ON orders(account_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_orders_instrument
 ON orders(instrument_id);
 
-CREATE INDEX IF NOT EXISTS idx_orders_instrument_side_price
-ON orders(
-    instrument_id,
-    side,
-    limit_price
-);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at
+ON orders(created_at);
 
 CREATE INDEX IF NOT EXISTS idx_holdings_account
 ON holdings(account_id);
@@ -44,9 +40,3 @@ ON watchlist_items(watchlist_id);
 
 CREATE INDEX IF NOT EXISTS idx_watchlist_items_instrument
 ON watchlist_items(instrument_id);
-
-CREATE INDEX IF NOT EXISTS idx_price_alerts_user
-ON price_alerts(user_id);
-
-CREATE INDEX IF NOT EXISTS idx_price_alerts_instrument
-ON price_alerts(instrument_id);

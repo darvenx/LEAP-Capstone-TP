@@ -37,8 +37,24 @@ CREATE TABLE trading_accounts
 
     account_number VARCHAR(30) NOT NULL UNIQUE,
 
+    holder_name VARCHAR(255) NOT NULL,
+
+    status account_status NOT NULL DEFAULT 'ACTIVE',
+
+    currency CHAR(3) NOT NULL DEFAULT 'EUR',
+
+    CONSTRAINT chk_account_currency
+        CHECK (currency ~ '^[A-Z]{3}$'),
+
     cash_balance NUMERIC(18,2)
-        NOT NULL DEFAULT 0,
+        NOT NULL DEFAULT 0
+        CHECK (cash_balance >= 0),
+
+    version BIGINT NOT NULL DEFAULT 0
+        CHECK (version >= 0),
+
+    CONSTRAINT chk_account_status
+        CHECK (status IN ('ACTIVE', 'SUSPENDED', 'CLOSED')),
 
     created_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
@@ -56,23 +72,22 @@ CREATE TABLE instruments
 
     ticker VARCHAR(20) NOT NULL UNIQUE,
 
-    company_name VARCHAR(255) NOT NULL,
+    display_name VARCHAR(255) NOT NULL,
 
-    exchange VARCHAR(20),
+    asset_class asset_class NOT NULL,
 
-    stocks INT NOT NULL
-        DEFAULT 0,
+    quote_currency CHAR(3) NOT NULL,
 
-    sector VARCHAR(100),
+    is_tradable BOOLEAN NOT NULL DEFAULT TRUE,
 
-    is_active BOOLEAN NOT NULL
-        DEFAULT TRUE,
+    CONSTRAINT chk_instrument_quote_currency
+        CHECK (quote_currency ~ '^[A-Z]{3}$'),
 
     created_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT chk_instrument_stocks
-        CHECK (stocks >= 0)
+    CONSTRAINT chk_instrument_ticker
+        CHECK (btrim(ticker) <> '')
 );
 
 
@@ -90,7 +105,7 @@ CREATE TABLE holdings
 
     quantity NUMERIC(18,4) NOT NULL,
 
-    average_buy_price NUMERIC(18,2) NOT NULL,
+    average_buy_price NUMERIC(18,4) NOT NULL,
 
     updated_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
@@ -135,6 +150,8 @@ CREATE TABLE orders
     instrument_id UUID NOT NULL
         REFERENCES instruments(instrument_id),
 
+    idempotency_key VARCHAR(128) NOT NULL UNIQUE,
+
     side order_side NOT NULL,
 
     order_type order_type NOT NULL,
@@ -143,10 +160,10 @@ CREATE TABLE orders
 
     remaining_quantity NUMERIC(18,4) NOT NULL,
 
-    limit_price NUMERIC(18,2),
+    limit_price NUMERIC(18,4),
 
     status order_status NOT NULL
-        DEFAULT 'OPEN',
+        DEFAULT 'NEW',
 
     created_at TIMESTAMPTZ NOT NULL
         DEFAULT CURRENT_TIMESTAMP,
@@ -157,6 +174,9 @@ CREATE TABLE orders
     CONSTRAINT chk_order_quantity
         CHECK (quantity > 0),
 
+    CONSTRAINT chk_order_idempotency_key
+        CHECK (btrim(idempotency_key) <> ''),
+
     CONSTRAINT chk_remaining_quantity
         CHECK (
             remaining_quantity >= 0
@@ -165,12 +185,14 @@ CREATE TABLE orders
 
     CONSTRAINT chk_limit_order_price
         CHECK (
-            order_type = 'MARKET'
-            OR (
-                order_type = 'LIMIT'
-                AND limit_price IS NOT NULL
-                AND limit_price > 0
-            )
+            (order_type = 'MARKET' AND limit_price IS NULL)
+            OR (order_type = 'LIMIT' AND limit_price > 0)
+        ),
+
+    CONSTRAINT chk_order_terminal_quantity
+        CHECK (
+            (status = 'NEW' AND remaining_quantity = quantity)
+            OR (status IN ('FILLED', 'REJECTED', 'CANCELLED') AND remaining_quantity = 0)
         )
 );
 
@@ -194,7 +216,14 @@ CREATE TABLE cash_ledger
         DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT chk_ledger_amount
-        CHECK (amount <> 0)
+        CHECK (amount <> 0),
+
+    CONSTRAINT chk_ledger_entry_sign
+        CHECK (
+            (entry_type = 'INITIAL_BALANCE' AND amount > 0)
+            OR (entry_type = 'BUY_TRADE' AND amount < 0)
+            OR (entry_type = 'SELL_TRADE' AND amount > 0)
+        )
 );
 
 
