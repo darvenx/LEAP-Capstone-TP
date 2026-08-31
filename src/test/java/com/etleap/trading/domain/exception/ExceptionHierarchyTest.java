@@ -96,7 +96,7 @@ class ExceptionHierarchyTest {
         InsufficientHoldingsException holdings = new InsufficientHoldingsException(1L, "XYZ-USD", 5L, 1L);
         DuplicateOrderException duplicate = new DuplicateOrderException("k");
         assertEquals(holdings.getCode(), duplicate.getCode());
-        assertTrue(holdings.getClass() != duplicate.getClass());
+        assertTrue(!holdings.getClass().equals(duplicate.getClass()));
     }
 
     @Test
