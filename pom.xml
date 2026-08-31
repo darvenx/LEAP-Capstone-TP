@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    Sprint 5: the trading domain engine.
+
+    Coordinates are local to this module. There is no artefact to publish; `mvn install`
+    only needs to put this jar in the local repository so that Sprint 6 can absorb this
+    package, under this base package name, as source into the Trade REST API's own build.
+  -->
+  <groupId>com.etleap.trading</groupId>
+  <artifactId>trading-domain-engine</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>Trading Domain Engine</name>
+  <description>
+    Plain-Java domain module for the Fauxnance trading capstone: accounts, instruments,
+    orders and positions, and the eight business rules that govern order placement.
+    Framework-independent by design so that Sprint 6 can wrap it in a transport without
+    reimplementing any of it.
+  </description>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+    <junit.jupiter.version>5.10.1</junit.jupiter.version>
+    <jakarta.validation.version>3.0.2</jakarta.validation.version>
+
+    <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+    <maven-surefire-plugin.version>2.22.3</maven-surefire-plugin.version>
+    <maven-enforcer-plugin.version>3.1.0</maven-enforcer-plugin.version>
+    <maven-install-plugin.version>3.1.1</maven-install-plugin.version>
+    <maven-resources-plugin.version>3.3.0</maven-resources-plugin.version>
+    <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+    <maven-clean-plugin.version>3.2.0</maven-clean-plugin.version>
+  </properties>
+
+  <!--
+    jakarta.validation-api is the ONLY non-test dependency. Bean Validation annotations are
+    declarations rather than behaviour, which is why they are the one framework this
+    architecture allows inside the domain: PlaceOrderRequest carries them for documentation
+    and for interoperability with whatever Validator Sprint 6 wires up. This module enforces
+    every constraint itself (validating by hand is explicitly permitted by the brief) so that
+    a caller which never runs a Bean Validation provider - the Trade Executor replaying an
+    order in Sprint 7 - is still governed by the same rules. junit-jupiter is the only other
+    dependency, and it is test-scope only.
+  -->
+  <dependencies>
+    <dependency>
+      <groupId>jakarta.validation</groupId>
+      <artifactId>jakarta.validation-api</artifactId>
+      <version>${jakarta.validation.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+      </plugin>
+
+      <!-- JUnit 5 via surefire, reports land in target/surefire-reports/. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.surefire</groupId>
+            <artifactId>surefire-junit-platform</artifactId>
+            <version>${maven-surefire-plugin.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-install-plugin</artifactId>
+        <version>${maven-install-plugin.version}</version>
+      </plugin>
+
+      <!-- Pinned so the default lifecycle bindings resolve from the offline repo too. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>${maven-resources-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>${maven-jar-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>${maven-clean-plugin.version}</version>
+      </plugin>
+
+      <!-- So `mvn dependency:tree` resolves without needing a plugin-prefix lookup online. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <version>3.5.0</version>
+      </plugin>
+
+      <!--
+        Bans the forbidden dependencies in our own build: a failing build tells whoever
+        added Spring, a servlet API, a JDBC driver, MyBatis or a connection pool exactly
+        why, the moment it reaches the dependency tree, including transitively.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <version>${maven-enforcer-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>enforce-domain-purity</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <version>[21,)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <version>[3.9,)</version>
+                </requireMavenVersion>
+                <bannedDependencies>
+                  <message>
+                    This module is the trading domain engine: plain Java only. Spring, a
+                    servlet API, a JDBC driver, MyBatis and a connection pool are transport
+                    or persistence concerns that belong in Sprint 6, not here. Remove the
+                    dependency (or its transitive source) that pulled this in.
+                  </message>
+                  <excludes>
+                    <!-- Spring, in any flavour -->
+                    <exclude>org.springframework</exclude>
+                    <exclude>org.springframework.boot</exclude>
+                    <exclude>org.springframework.data</exclude>
+                    <exclude>org.springframework.security</exclude>
+                    <!-- Servlet API -->
+                    <exclude>javax.servlet</exclude>
+                    <exclude>jakarta.servlet</exclude>
+                    <exclude>org.apache.tomcat.embed</exclude>
+                    <!-- JDBC drivers -->
+                    <exclude>mysql</exclude>
+                    <exclude>com.mysql</exclude>
+                    <exclude>org.postgresql</exclude>
+                    <exclude>com.h2database</exclude>
+                    <exclude>com.oracle.database.jdbc</exclude>
+                    <exclude>com.microsoft.sqlserver</exclude>
+                    <exclude>org.mariadb.jdbc</exclude>
+                    <exclude>org.xerial</exclude>
+                    <!-- MyBatis -->
+                    <exclude>org.mybatis</exclude>
+                    <!-- Connection pools -->
+                    <exclude>com.zaxxer</exclude>
+                    <exclude>org.apache.tomcat:tomcat-jdbc</exclude>
+                    <exclude>org.apache.commons:commons-dbcp2</exclude>
+                    <exclude>commons-dbcp</exclude>
+                    <exclude>com.mchange</exclude>
+                  </excludes>
+                  <searchTransitive>true</searchTransitive>
+                </bannedDependencies>
+              </rules>
+              <fail>true</fail>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
