@@ -21,10 +21,11 @@ needed to run the suite.
 
 | Path | What's there |
 |---|---|
-| `src/main/java/com/etleap/trading/domain/` | The three enumerations, the four entities, `Money`, `OrderPlacementRules`, the idempotency seam |
+| `src/main/java/com/etleap/trading/domain/` | The three enumerations, the four entities, `OrderPlacementRules`, the idempotency seam |
 | `src/main/java/com/etleap/trading/domain/dto/` | `PlaceOrderRequest`, `FieldViolation`, `PlaceOrderRequestValidator` |
 | `src/main/java/com/etleap/trading/domain/exception/` | `TradingDomainException` and its seven subtypes |
-| `src/test/java/...` | One test class per production class, plus the three named classes the brief requires: `AccountTest`, `OrderLogicTest`, `PlaceOrderRequestValidationTest` |
+| `src/main/java/com/etleap/trading/domain/support/` | `Money`, the exactly-two-decimal-places normalization helper every entity holding a `BigDecimal` calls |
+| `src/test/java/...` | Mirrors the four packages above, one test class per production class, plus the three named classes the brief requires: `AccountTest`, `OrderLogicTest`, `PlaceOrderRequestValidationTest` |
 | `design/class-diagram.md` | UML class diagram (Mermaid) |
 | `design/sequence-diagram.md` | UML sequence diagram of order placement (Mermaid) |
 | `design/decisions.md` | The two design decisions the brief asks for, and why the rule evaluation order is what it is |
