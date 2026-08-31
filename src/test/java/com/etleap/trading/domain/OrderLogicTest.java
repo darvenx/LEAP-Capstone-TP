@@ -400,4 +400,67 @@ class OrderLogicTest {
         assertEquals(OrderStatus.NEW, order.getStatus());
         assertEquals(OrderSide.SELL, order.getSide());
     }
+
+    // === Settlement stays out of evaluate() (ETLEAPCP-1282, and the brief's rules 9/10) =======
+    //
+    // "cash and position move together or neither moves" is the brief's rule 9, and it is
+    // explicitly uncounted and explicitly deferred: "[the order's] executed price is what the
+    // Trade Executor achieves against a live quote in Sprint 7 and does not exist until the
+    // order is filled." evaluate() only ever accepts a NEW order at the customer's *limit*
+    // price - it never calls Account.debit or Position.applyBuy/applySell itself, because the
+    // amount actually settled is the Trade Executor's executed price, which this sprint cannot
+    // know yet. These two tests are the "buy succeeds and updates cash and position" scenario
+    // the ticket names: they prove that once evaluate() accepts an order, the domain's own
+    // settlement operations - Account.debit, Position.applyBuy/applySell - compose correctly
+    // against the values on that accepted order, so whichever caller settles it (the Trade
+    // Executor, in Sprint 7) has everything it needs and nothing left to reimplement.
+
+    @Test
+    void aSuccessfulBuyComposesWithAccountDebitAndPositionApplyBuy() {
+        OrderPlacementRules rules = newRules();
+        PlaceOrderRequest request = buyRequest(10L, "50.00", "key-0000000026");
+        Account account = activeAccount("1000.00");
+        Position position = Position.empty(ACCOUNT_ID, SYMBOL);
+
+        Order order = rules.evaluate(request, account, tradableInstrument(), position);
+        assertEquals(OrderStatus.NEW, order.getStatus());
+
+        // evaluate() alone moved nothing yet - the order is accepted, not settled.
+        assertEquals(new BigDecimal("1000.00"), account.getCashBalance());
+        assertEquals(0L, position.getQuantity());
+
+        // Settlement, once it happens (Sprint 7), uses exactly the values the accepted order
+        // carries and the existing entity operations - no new domain behaviour required.
+        BigDecimal cost = order.getLimitPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        account.debit(cost);
+        position.applyBuy(order.getQuantity(), order.getLimitPrice());
+
+        assertEquals(new BigDecimal("500.00"), cost);
+        assertEquals(new BigDecimal("500.00"), account.getCashBalance());
+        assertEquals(10L, position.getQuantity());
+        assertEquals(new BigDecimal("50.00"), position.getAverageCost());
+    }
+
+    @Test
+    void aSuccessfulSellComposesWithPositionApplySellAndAccountCredit() {
+        OrderPlacementRules rules = newRules();
+        PlaceOrderRequest request = sellRequest(4L, "50.00", "key-0000000027");
+        Account account = activeAccount("1000.00");
+        Position position = Position.of(ACCOUNT_ID, SYMBOL, 10L, new BigDecimal("40.00"));
+
+        Order order = rules.evaluate(request, account, tradableInstrument(), position);
+        assertEquals(OrderStatus.NEW, order.getStatus());
+
+        // Unsettled: the holding and the cash balance are exactly as they were before evaluate().
+        assertEquals(10L, position.getQuantity());
+        assertEquals(new BigDecimal("1000.00"), account.getCashBalance());
+
+        BigDecimal proceeds = order.getLimitPrice().multiply(BigDecimal.valueOf(order.getQuantity()));
+        position.applySell(order.getQuantity());
+        account.credit(proceeds);
+
+        assertEquals(6L, position.getQuantity());
+        assertEquals(new BigDecimal("40.00"), position.getAverageCost(), "a sell leaves the average cost alone");
+        assertEquals(new BigDecimal("1200.00"), account.getCashBalance());
+    }
 }

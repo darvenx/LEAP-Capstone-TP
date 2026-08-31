@@ -67,6 +67,37 @@ Sprint 6's job is narrower than it looks: implement `IdempotencyKeyRegistry` aga
 `orders.idempotency_key`, where `register` reports `false` when the `INSERT` raises a
 constraint-violation, not by issuing a `SELECT` first.
 
+## Why `evaluate()` never calls `debit`/`applyBuy`/`applySell`
+
+ETLEAPCP-1282 names a test path, "buy succeeds and updates cash and position," and it would be
+a mistake to read that as an instruction to make `OrderPlacementRules.evaluate()` call
+`Account.debit` or `Position.applyBuy` itself. The brief settles this directly, in two places:
+
+> Rules 9 and 10 carry no error code and are not countable criteria this sprint, but leave room
+> for them: cash and position move together or neither moves, and every order is recorded,
+> including a rejected one...
+
+> Its limit price is what the customer submitted; its executed price is what the Trade Executor
+> achieves against a live quote in Sprint 7 and does not exist until the order is filled.
+
+"Cash and position move together" is rule 9 - uncounted, and explicitly future work ("leave
+room for them"), not one of the eight rules `evaluate()` is scored against. More concretely: the
+amount that should actually move is the order's *executed* price, and that price "does not
+exist until the order is filled" - which happens in a different process, in Sprint 7, against a
+live quote. `evaluate()` only ever sees the customer's *limit* price. If it debited the account
+or updated the position here, it would be moving money at a price the order was never actually
+filled at, and Sprint 7 would then have no correct way to reconcile the difference.
+
+So settlement stays exactly where the brief puts it: outside this sprint. What `evaluate()`
+does instead is accept the order into `NEW` once all eight rules pass, and stop. The test path
+the ticket names is proven a different way -
+`OrderLogicTest.aSuccessfulBuyComposesWithAccountDebitAndPositionApplyBuy` and
+`...aSuccessfulSellComposesWithPositionApplySellAndAccountCredit` - by asserting `evaluate()`
+moves neither the account nor the position, and then driving `Account.debit`/`credit` and
+`Position.applyBuy`/`applySell` directly against the values the accepted `Order` carries. That
+demonstrates the entity operations a settler needs already exist and already compose correctly,
+without this module guessing at a price it cannot yet know.
+
 ## Why the evaluation order is what it is
 
 Rules 1 to 8 run in the fixed order the brief specifies, and the reasoning generalises past
