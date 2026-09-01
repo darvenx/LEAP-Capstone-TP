@@ -5,11 +5,12 @@
 # in here as siblings. The Python analytics ETL runs on the host, not in a
 # container (per the blueprint).
 #
-# One command brings the database up, migrated and seeded:
+# One command brings the database up, migrated, CSV-seeded and probe-tested:
 #
 #     docker compose up -d
 #
-# Values come from the repository-root .env (see .env.example).
+# Values come from the repository-root .env (see .env.example). Init runs only
+# against an empty volume; reset with `docker compose down -v`.
 
 services:
   postgres:
@@ -25,7 +26,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # The migrations + seed, mounted read-only as the init source of truth.
+      # The migrations, CSV seed and probes, mounted read-only as the init source.
       - ./sprint-03-trade-database:/sprint-03:ro
       # The init hook that applies them on an empty volume, filename order.
       - ./infra/postgres/initdb:/docker-entrypoint-initdb.d:ro

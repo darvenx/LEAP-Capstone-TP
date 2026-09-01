@@ -29,17 +29,17 @@ and asserted.
 
 | Area | Evidence |
 |---|---|
-| Split-brain removed; one coherent schema | consolidated `migrations/001_schema.sql`; phantom-schema `sql/` files rewritten |
+| Split-brain removed; one coherent schema | numbered `migrations/001_…017_`; phantom-schema `sql/` files rewritten |
 | Broken migration fixed | `order_status` default is now `'NEW'` (was invalid `'OPEN'`) |
 | Idempotency key + `23505` | `orders.idempotency_key UNIQUE`; `sql/failure_tests.sql` |
 | FK violation `23503` | `sql/failure_tests.sql` |
-| Account `status` + `version` + two identifiers | `accounts` table in `001_schema.sql` matches `trade-api.yaml` |
-| Instrument `asset_class`/`currency`/`tradable`/`symbol` | `instruments` table in `001_schema.sql` |
-| Positions with `average_cost`, no shorting | `positions` table in `001_schema.sql` |
+| Account `status` + `version` + two identifiers | `004_accounts.sql` matches `trade-api.yaml` |
+| Instrument `asset_class`/`currency`/`tradable`/`symbol` | `005_instruments.sql` |
+| Positions with `average_cost`, no shorting | `007_positions.sql` |
 | Seed as `.sql`, full state coverage | `seed/001_seed.sql`; all four order states, three account states, delisted+FX instruments |
-| One-command apply (ON_ERROR_STOP, seeds, no prompt) | `scripts/apply.sh` / `apply.ps1` |
+| One-command apply (ON_ERROR_STOP, seeds, no prompt) | `scripts/apply.sh` / `apply.ps1`; Docker one-liner `scripts/setup.sh` |
 | Design docs + ≥3 justified indexes + historical design | `DESIGN.md`, `design/{er-diagram,indexes,normalisation}.md` |
-| Redundant aggregator removed | old `schema.sql` deleted; schema now consolidated in `migrations/001_schema.sql` |
+| Numbered migrations as the versioning unit | `001_extensions.sql` … `016_integrity_guards.sql`; no aggregator `schema.sql` |
 
 ## Requirements partially satisfied
 
@@ -95,7 +95,7 @@ and asserted.
 
 ## Recommendations for Sprint 5 (domain engine)
 
-- Build the Java enums directly from the Enums section of `migrations/001_schema.sql`: `AccountStatus`
+- Build the Java enums directly from `migrations/002_enums.sql`: `AccountStatus`
   (`ACTIVE/SUSPENDED/CLOSED`), `OrderSide` (`BUY/SELL`), `OrderStatus`
   (`NEW/FILLED/REJECTED/CANCELLED`). They are now authoritative and consistent.
 - Model `Account` with both identifiers (numeric `id`, string `accountId`),

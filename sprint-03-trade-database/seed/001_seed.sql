@@ -13,10 +13,12 @@
 --      buy fills; a sell reduces quantity and leaves average_cost unchanged);
 --   * suspended/closed accounts placed no orders after losing ACTIVE status.
 --
--- Surrogate keys (accounts.id, instruments.id) are GENERATED ALWAYS AS IDENTITY,
--- so children resolve their parent by business reference (accounts.account_id)
--- or instruments.symbol. Users and watchlists carry explicit UUIDs so the
--- dependent rows can reference them.
+-- This .sql seed omits the surrogate keys (accounts.id, instruments.id) and
+-- lets the database assign them, so children resolve their parent by business
+-- reference (accounts.account_id) or instruments.symbol. Users and watchlists
+-- carry explicit UUIDs so the dependent rows can reference them. (The CSV seed
+-- under seed/csv/ instead supplies explicit surrogate ids for the bulk COPY
+-- path used by the Docker one-line setup; both produce the same rows.)
 -- =============================================================================
 
 
@@ -183,17 +185,20 @@ INSERT INTO price_alerts (user_id, instrument_id, target_price, direction, is_ac
 
 
 -- --- notifications (10): a mix of PENDING / SENT / FAILED ---------------------
-INSERT INTO notifications (user_id, title, message, status, sent_at, provider_reference, created_at) VALUES
-  ('10000000-0000-0000-0000-000000000001', 'Order filled',      'Your BUY order for 40 INFY.NS was filled at 1578.00.',            'SENT',    '2026-03-04T09:20:10Z', 'prov-0001', '2026-03-04T09:20:06Z'),
-  ('10000000-0000-0000-0000-000000000001', 'Price alert',       'INFY.NS crossed above your 1650.00 alert.',                       'PENDING', NULL,                    NULL,        '2026-06-30T04:00:00Z'),
-  ('10000000-0000-0000-0000-000000000002', 'Order filled',      'Your BUY order for 50 HDFCBANK.NS was filled at 1650.00.',        'SENT',    '2026-03-18T10:30:10Z', 'prov-0002', '2026-03-18T10:30:06Z'),
-  ('10000000-0000-0000-0000-000000000002', 'Order cancelled',   'Your order for 30 TATAMOTORS.BO was cancelled.',                  'SENT',    '2026-06-20T15:00:05Z', 'prov-0003', '2026-06-20T15:00:01Z'),
-  ('10000000-0000-0000-0000-000000000003', 'Welcome',           'Welcome to the Enterprise Trading Platform.',                     'SENT',    '2026-01-07T04:05:00Z', 'prov-0004', '2026-01-07T04:00:10Z'),
-  ('10000000-0000-0000-0000-000000000004', 'Order rejected',    'Your BUY order for 5 RELIANCE.NS was rejected: insufficient funds.','FAILED', NULL,                   'prov-0005', '2026-07-01T07:15:02Z'),
-  ('10000000-0000-0000-0000-000000000005', 'Statement ready',   'Your monthly statement is ready to view.',                        'PENDING', NULL,                    NULL,        '2026-07-01T04:00:00Z'),
-  ('10000000-0000-0000-0000-000000000006', 'Order filled',      'Your BUY order for 20 AAPL was filled at 190.00.',                'SENT',    '2026-04-01T15:30:08Z', 'prov-0006', '2026-04-01T15:30:04Z'),
-  ('10000000-0000-0000-0000-000000000007', 'Account suspended', 'Your account has been suspended. Please contact support.',        'SENT',    '2026-06-01T04:05:00Z', 'prov-0007', '2026-06-01T04:00:05Z'),
-  ('10000000-0000-0000-0000-000000000009', 'Account closed',    'Your account has been closed. History remains available.',        'SENT',    '2026-05-20T04:05:00Z', 'prov-0008', '2026-05-20T04:00:05Z');
+-- Each order-driven notice references the order it concerns (related_order_id)
+-- and carries an event_id (idempotency for the Sprint 7/10 at-least-once feed);
+-- the numbers it quotes live once, on that order, not as a copy in the message.
+INSERT INTO notifications (user_id, account_id, related_order_id, event_id, title, message, status, failure_reason, sent_at, provider_reference, created_at) VALUES
+  ('10000000-0000-0000-0000-000000000001', (SELECT id FROM accounts WHERE account_id='ACC-000001'), (SELECT id FROM orders WHERE idempotency_key='idem-0001-infy-buy'),       'evt-fill-0001',   'Order filled',      'Your BUY order for 40 INFY.NS was filled at 1578.00.',             'SENT',    NULL,                 '2026-03-04T09:20:10Z', 'prov-0001', '2026-03-04T09:20:06Z'),
+  ('10000000-0000-0000-0000-000000000001', NULL,                                                     NULL,                                                                     'evt-alert-0001',  'Price alert',       'INFY.NS crossed above your 1650.00 alert.',                        'PENDING', NULL,                 NULL,                    NULL,        '2026-06-30T04:00:00Z'),
+  ('10000000-0000-0000-0000-000000000002', (SELECT id FROM accounts WHERE account_id='ACC-000002'), (SELECT id FROM orders WHERE idempotency_key='idem-0007-hdfc-buy'),       'evt-fill-0007',   'Order filled',      'Your BUY order for 50 HDFCBANK.NS was filled at 1650.00.',         'SENT',    NULL,                 '2026-03-18T10:30:10Z', 'prov-0002', '2026-03-18T10:30:06Z'),
+  ('10000000-0000-0000-0000-000000000002', (SELECT id FROM accounts WHERE account_id='ACC-000002'), (SELECT id FROM orders WHERE idempotency_key='idem-0010-tatamotors-can'), 'evt-cancel-0010', 'Order cancelled',   'Your order for 30 TATAMOTORS.BO was cancelled.',                   'SENT',    NULL,                 '2026-06-20T15:00:05Z', 'prov-0003', '2026-06-20T15:00:01Z'),
+  ('10000000-0000-0000-0000-000000000003', (SELECT id FROM accounts WHERE account_id='ACC-000003'), NULL,                                                                     NULL,              'Welcome',           'Welcome to the Enterprise Trading Platform.',                      'SENT',    NULL,                 '2026-01-07T04:05:00Z', 'prov-0004', '2026-01-07T04:00:10Z'),
+  ('10000000-0000-0000-0000-000000000004', (SELECT id FROM accounts WHERE account_id='ACC-000004'), (SELECT id FROM orders WHERE idempotency_key='idem-0015-reliance-rej'),   'evt-reject-0015', 'Order rejected',    'Your BUY order for 5 RELIANCE.NS was rejected: insufficient funds.','FAILED',  'email send timeout', NULL,                    'prov-0005', '2026-07-01T07:15:02Z'),
+  ('10000000-0000-0000-0000-000000000005', (SELECT id FROM accounts WHERE account_id='ACC-000005'), NULL,                                                                     NULL,              'Statement ready',   'Your monthly statement is ready to view.',                         'PENDING', NULL,                 NULL,                    NULL,        '2026-07-01T04:00:00Z'),
+  ('10000000-0000-0000-0000-000000000006', (SELECT id FROM accounts WHERE account_id='ACC-000006'), (SELECT id FROM orders WHERE idempotency_key='idem-0013-aapl-buy'),       'evt-fill-0013',   'Order filled',      'Your BUY order for 20 AAPL was filled at 190.00.',                 'SENT',    NULL,                 '2026-04-01T15:30:08Z', 'prov-0006', '2026-04-01T15:30:04Z'),
+  ('10000000-0000-0000-0000-000000000007', (SELECT id FROM accounts WHERE account_id='ACC-000007'), NULL,                                                                     NULL,              'Account suspended', 'Your account has been suspended. Please contact support.',         'SENT',    NULL,                 '2026-06-01T04:05:00Z', 'prov-0007', '2026-06-01T04:00:05Z'),
+  ('10000000-0000-0000-0000-000000000009', (SELECT id FROM accounts WHERE account_id='ACC-000009'), NULL,                                                                     NULL,              'Account closed',    'Your account has been closed. History remains available.',         'SENT',    NULL,                 '2026-05-20T04:05:00Z', 'prov-0008', '2026-05-20T04:00:05Z');
 
 
 -- --- portfolio_snapshots (10): value over time for the trading accounts -------

@@ -2,7 +2,7 @@
 -- The two rejections Sprint 3 must demonstrate live, against the corrected
 -- schema and the loaded seed. Run from the sprint-03-trade-database folder:
 --
---   psql "$TARGET_DATABASE" -v ON_ERROR_STOP=0 -f sql/failure_tests.sql
+--   psql "$TARGET_DATABASE" -v ON_ERROR_STOP=0 -f probes/failure_tests.sql
 --
 -- ON_ERROR_STOP is intentionally OFF here: we WANT to see the database refuse
 -- each row and print its SQLSTATE, rather than aborting the whole script.

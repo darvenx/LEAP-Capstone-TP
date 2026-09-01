@@ -4,38 +4,87 @@ This is the design record for the Sprint 3 trade database. It names the apply
 command, summarises the model, and covers the historical-trade-data design the
 brief requires.
 
-## The apply command
+## Building the database
 
-One command takes an empty database to fully migrated and seeded:
+There are two one-command paths, and they seed the *same* rows two ways.
+Both read `POSTGRES_*` from the repository-root `.env`, never prompt for a
+password, and finish by running `probes/` (the six named queries plus the two
+required rejections).
+
+**Docker (one line, seeds from CSV).** Builds a self-contained Postgres 16
+image, applies the migrations, bulk-loads `seed/csv/*.csv` with `COPY`, and
+runs the probes:
 
 ```bash
 # from this folder (sprint-03-trade-database/)
-./scripts/apply.sh            # bash / Linux / macOS / Git Bash / WSL
-./scripts/apply.ps1           # Windows PowerShell
+./scripts/setup.sh            # bash / Linux / macOS / Git Bash / WSL
+./scripts/setup.ps1           # Windows PowerShell
 ```
 
-It applies every `migrations/*.sql` in filename order, then every `seed/*.sql`
-in filename order, with `psql -v ON_ERROR_STOP=1` so any failure aborts with a
-non-zero exit. The target database is read from `TARGET_DATABASE`, falling back
-to `POSTGRES_DB` from the repository-root `.env`. It never prompts. The database
-must already exist and be empty; `scripts/create_db.sh` will create it first if
-you want that step folded in, and the Docker path (`infra/postgres/` +
-`docker-compose.yml`) builds it unattended on an empty volume.
+**Local psql (one line, seeds from CSV).** For a Postgres you already run, this
+recreates the database, applies the migrations, bulk-loads `seed/csv/*.csv`,
+and runs the probes:
 
-The schema is a single file, `migrations/001_schema.sql` (extensions, enums,
-tables in dependency order, then indexes). The apply command still globs
-`migrations/*.sql`, so future changes are added as new numbered files
-(`002_...`, `003_...`) rather than by editing `001` after the first design
-review. Seed data is kept separate, in `seed/001_seed.sql`.
+```bash
+./scripts/create_db.sh        # bash
+./scripts/create_db.ps1       # Windows PowerShell
+```
+
+`scripts/apply.sh` / `apply.ps1` remain available if you already have an empty
+database and prefer the `.sql` seed (`seed/001_seed.sql`) without recreating
+the DB or running probes.
+
+All of the above apply every `migrations/*.sql` in filename order with
+`psql -v ON_ERROR_STOP=1 --no-password`, so any failure aborts with a non-zero
+exit and nothing is prompted. The local path reads the target database from
+`TARGET_DATABASE`, falling back to `POSTGRES_DB` in the repository-root `.env`.
+The repository-root `docker-compose.yml` is a third route that mounts the same
+files, loads the CSV seed, and runs the probes on first start.
+
+The schema is numbered migrations, one concern per file, applied in filename
+order. From the first design review onward these files are immutable; later
+changes are new numbered files (`017_...`), never edits to an earlier one.
+
+| File | Owns |
+|---|---|
+| `001_extensions.sql` | `pgcrypto` |
+| `002_enums.sql` | domain enums (`account_status`, `order_side`, `order_status`, …) |
+| `003_users.sql` | identity (email is the notification destination) |
+| `004_accounts.sql` | two identifiers, cash, status, optimistic-lock `version` |
+| `005_instruments.sql` | Fauxnance `symbol`, `asset_class`, `tradable` flag |
+| `006_orders.sql` | idempotency key, limit price, all four statuses |
+| `007_positions.sql` | quantity + average cost, no shorting |
+| `008_cash_ledger.sql` | cash movements + entry-sign CHECK |
+| `009_watchlists.sql` … `011_price_alerts.sql` | Sprint 10 watchlists |
+| `012_notifications.sql` | email delivery ledger (references order/account; unique `event_id`) |
+| `013_portfolio_snapshots.sql` | Sprint 10 priced snapshots |
+| `014_audit_logs.sql` | audit trail |
+| `015_indexes.sql` | indexes justified in `design/indexes.md` |
+| `016_integrity_guards.sql` | order ACTIVE-account / tradable-instrument / terminal-immutability triggers |
+
+Seed data is kept separate: the canonical `.sql` file `seed/001_seed.sql`, and
+an equivalent per-table `seed/csv/*.csv` set for the `COPY`-based Docker load.
 
 ## Model summary
 
 Core entities: `accounts`, `instruments`, `orders`, `positions`, `cash_ledger`,
 plus `users` for identity. Extension tables (`watchlists`, `watchlist_items`,
 `price_alerts`, `notifications`, `portfolio_snapshots`, `audit_logs`) are the
-Sprint 10 superset, retained now. See `design/er-diagram.md` for the full
-diagram, `design/normalisation.md` for 3NF and the one deliberate
-denormalisation, and `design/indexes.md` for the index justifications.
+Sprint 10 superset, retained now. Customer preferences (default account +
+alert channel) are **omitted**: delivery is email-only for now, using
+`users.email`. The Preferences table can be added as `017_…` in Sprint 10 if
+SMS/push/in-app are needed.
+
+See `design/er-diagram.md` for the full diagram, `design/normalisation.md` for
+3NF and the one deliberate denormalisation, and `design/indexes.md` for the
+index justifications.
+
+`notifications` is an email delivery ledger: rather than copying an order's
+price/quantity into the message (a second value that could drift from the
+order), each order-driven row **references** its `related_order_id` and
+`account_id`, and carries a unique `event_id` so a replayed at-least-once event
+is delivered at most once. The numbers live once — on `orders`. There is no
+`channel` column; email is the only delivery path.
 
 Key correctness properties enforced by the database, not by application code:
 
@@ -48,8 +97,8 @@ Key correctness properties enforced by the database, not by application code:
 - Two account identifiers: numeric `id` (contract `accountId`) and string
   `account_id` (contract `AccountResponse.accountId`).
 
-Both required rejections are scripted in `sql/failure_tests.sql`; the six named
-queries are in `sql/verify_queries.sql`.
+Both required rejections are scripted in `probes/failure_tests.sql`; the six named
+queries are in `probes/verify_queries.sql`.
 
 ## Historical trade data
 

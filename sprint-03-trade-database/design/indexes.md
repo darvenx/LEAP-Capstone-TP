@@ -8,7 +8,7 @@ Run `EXPLAIN ANALYZE` for each query before and after the index against loaded
 data to confirm the plan change; the seed set is small, so also reason about the
 plan at scale (orders grows without bound).
 
-## Indexes created (the Indexes section of `migrations/001_schema.sql`)
+## Indexes created (`migrations/015_indexes.sql`)
 
 ### 1. `idx_orders_account_created` on `orders (account_id, created_on DESC)`
 
@@ -56,6 +56,21 @@ The three justified indexes are #1 (queries 1 and 2), #2 (query 4), plus the
   the customer-facing reference) with a unique scan. No separate index needed.
 - **`positions (account_id, instrument_id)` UNIQUE** — serves query 3 via its
   leftmost column, as noted above.
+
+## Extension indexes (also in `015_indexes.sql`)
+
+These are Sprint 10 consumer paths, not one of the six named queries, so they do
+not count towards the three justified indexes; they are listed for completeness
+and are cheap on tables written far less often than `orders`.
+
+- **`idx_notifications_account` on `notifications (account_id, created_at DESC)`**
+  — the customer's notice feed (an account's notifications, newest first).
+- **`idx_notifications_related_order` on `notifications (related_order_id)`** —
+  trace every notification a given order produced.
+
+`notifications.event_id` is `UNIQUE`, so the idempotency lookup ("has this event
+already been delivered?") is served by the constraint's index with no separate
+index needed — the same pattern as `orders.idempotency_key`.
 
 ## Query 6 earns no index
 

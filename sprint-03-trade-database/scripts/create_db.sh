@@ -1,16 +1,19 @@
 #!/usr/bin/env bash
 #
-# create_db.sh - convenience helper that creates the target database if it does
-# not already exist, then hands off to apply.sh. Not required by the brief (the
-# apply command targets an existing empty database) but handy for a local,
-# non-Docker Postgres. Non-interactive: reads connection from libpq env vars.
+# create_db.sh - local (non-Docker) one-line command.
+#
+# Recreates the target database, applies every migration, bulk-loads seed/csv,
+# and runs probes/. Credentials come from the repository-root .env. Never
+# prompts for a password (psql --no-password).
+#
+# Requires a running Postgres and `psql` on PATH.
 #
 #     ./scripts/create_db.sh
-#
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+REPO_DB_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$REPO_DB_DIR/.." && pwd)"
 
 if [ -f "$PROJECT_ROOT/.env" ]; then
   set -a
@@ -25,15 +28,37 @@ if [ -z "$TARGET_DB" ]; then
   exit 2
 fi
 
+export PGHOST="${PGHOST:-localhost}"
 export PGUSER="${PGUSER:-${POSTGRES_USER:-postgres}}"
 export PGPASSWORD="${PGPASSWORD:-${POSTGRES_PASSWORD:-}}"
-
-EXISTS="$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${TARGET_DB}'" || true)"
-if [ "$EXISTS" = "1" ]; then
-  echo "Database '$TARGET_DB' already exists."
-else
-  echo "Creating database '$TARGET_DB'."
-  psql -d postgres -v ON_ERROR_STOP=1 -c "CREATE DATABASE \"${TARGET_DB}\";"
+if [ -z "$PGPASSWORD" ]; then
+  echo "ERROR: set POSTGRES_PASSWORD in the repository-root .env (password prompt is disabled)" >&2
+  exit 2
 fi
 
-exec "$SCRIPT_DIR/apply.sh"
+PSQL=(psql -v ON_ERROR_STOP=1 --no-psqlrc --no-password)
+
+cd "$REPO_DB_DIR"
+
+echo "==> Recreating database '$TARGET_DB'"
+"${PSQL[@]}" -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${TARGET_DB}' AND pid <> pg_backend_pid();"
+"${PSQL[@]}" -d postgres -c "DROP DATABASE IF EXISTS \"${TARGET_DB}\";"
+"${PSQL[@]}" -d postgres -c "CREATE DATABASE \"${TARGET_DB}\";"
+
+echo "==> Applying migrations to '$TARGET_DB'"
+for f in migrations/*.sql; do
+  echo "    migration: $f"
+  "${PSQL[@]}" -d "$TARGET_DB" -f "$f"
+done
+
+echo "==> Loading CSV seed into '$TARGET_DB'"
+"${PSQL[@]}" -d "$TARGET_DB" -f "$SCRIPT_DIR/load_csv.sql"
+
+echo "==> Running probes"
+"${PSQL[@]}" -d "$TARGET_DB" -f "$REPO_DB_DIR/probes/verify_queries.sql"
+# Expected 23505 / 23503: do not abort the script on those errors.
+psql -v ON_ERROR_STOP=0 --no-psqlrc --no-password -d "$TARGET_DB" \
+  -f "$REPO_DB_DIR/probes/failure_tests.sql"
+
+echo ""
+echo "Done. '$TARGET_DB' is migrated, CSV-seeded and probe-tested."

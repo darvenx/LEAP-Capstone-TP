@@ -206,3 +206,35 @@ table updated). `sql/verify_queries.sql` and `sql/failure_tests.sql` still use
 **Verification note.** Still not run here (no Docker/`psql` on this host); the
 reconciliations were checked by hand. The Sprint 4 Python suite is unaffected
 (it reads fixtures, not the DB) and still passes.
+
+### 2026-08-31 — Re-split schema into numbered per-object migrations
+
+**Change description.** Re-baselined the consolidated `001_schema.sql` (plus the
+later `002_integrity_guards.sql` / `003_notifications_preferences.sql` ALTERs)
+into one numbered file per concern: `001_extensions.sql` … `017_integrity_guards.sql`.
+Enums (including `notification_channel`), table CREATE statements (including the
+widened `notifications` and `customer_preferences`), indexes, and order-guard
+triggers each own a file. Apply still globs `migrations/*.sql` in filename order.
+
+**Reason for change.** The Sprint 3 brief treats numbered migrations as the
+versioning unit. After the first design review these files are immutable;
+further changes are `018_…`.
+
+**Files modified / created.** New: `001_extensions.sql` … `017_integrity_guards.sql`.
+Deleted: `001_schema.sql`, `002_integrity_guards.sql`, `003_notifications_preferences.sql`.
+Updated: `DESIGN.md`, `design/indexes.md`, `docs/reviews/sprint-04-review.md`.
+
+### 2026-08-31 — Drop customer_preferences; email-only notifications
+
+**Change description.** Removed `customer_preferences` (Sprint 10 channel/default
+account) because delivery is email-only for now (`users.email`). Dropped
+`notification_channel` and `notifications.channel`. Notifications still
+reference `related_order_id` / `account_id` and carry unique `event_id` so
+prices are not copied onto the notice row. Migrations renumbered
+`001_extensions.sql` … `016_integrity_guards.sql`.
+
+**Files deleted.** `009_customer_preferences.sql`, `seed/csv/customer_preferences.csv`.
+**Updated.** `002_enums.sql`, `012_notifications.sql`, seed `.sql`/CSV, `docker_init.sh`,
+`DESIGN.md`, `design/{er-diagram,indexes}.md`, `seed/README.md`.
+
+

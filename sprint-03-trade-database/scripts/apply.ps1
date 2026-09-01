@@ -9,6 +9,9 @@
 # Uses psql -v ON_ERROR_STOP=1 so a failure aborts with a non-zero exit code.
 
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+    $PSNativeCommandUseErrorActionPreference = $false
+}
 
 $ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoDbDir   = Split-Path -Parent $ScriptDir
@@ -37,8 +40,15 @@ if ([string]::IsNullOrWhiteSpace($targetDb)) {
 if ([string]::IsNullOrWhiteSpace($env:PGUSER)) {
     $env:PGUSER = if ($env:POSTGRES_USER) { $env:POSTGRES_USER } else { 'postgres' }
 }
+if ([string]::IsNullOrWhiteSpace($env:PGHOST)) {
+    $env:PGHOST = 'localhost'
+}
 if ([string]::IsNullOrWhiteSpace($env:PGPASSWORD) -and $env:POSTGRES_PASSWORD) {
     $env:PGPASSWORD = $env:POSTGRES_PASSWORD
+}
+if ([string]::IsNullOrWhiteSpace($env:PGPASSWORD)) {
+    Write-Error "Set POSTGRES_PASSWORD in the repository-root .env (password prompt is disabled)"
+    exit 2
 }
 
 Set-Location $RepoDbDir
@@ -46,14 +56,14 @@ Set-Location $RepoDbDir
 Write-Host "==> Applying migrations to '$targetDb'"
 Get-ChildItem -Path 'migrations' -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "    migration: $($_.Name)"
-    psql -v ON_ERROR_STOP=1 --no-psqlrc -d $targetDb -f $_.FullName
+    psql -v ON_ERROR_STOP=1 --no-psqlrc --no-password -d $targetDb -f $_.FullName
     if ($LASTEXITCODE -ne 0) { throw "migration failed: $($_.Name)" }
 }
 
 Write-Host "==> Loading seed data into '$targetDb'"
 Get-ChildItem -Path 'seed' -Filter '*.sql' | Sort-Object Name | ForEach-Object {
     Write-Host "    seed: $($_.Name)"
-    psql -v ON_ERROR_STOP=1 --no-psqlrc -d $targetDb -f $_.FullName
+    psql -v ON_ERROR_STOP=1 --no-psqlrc --no-password -d $targetDb -f $_.FullName
     if ($LASTEXITCODE -ne 0) { throw "seed failed: $($_.Name)" }
 }
 

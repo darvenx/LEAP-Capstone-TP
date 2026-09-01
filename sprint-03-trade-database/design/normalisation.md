@@ -46,6 +46,23 @@ demonstrate the reconciliation (positions rebuilt from the filled orders), and
 the `DESIGN.md` reconciliation query shows it can be rederived — the check that
 the denormalisation is honest.
 
+## Notifications reference, they do not copy
+
+A notification quotes an order's numbers ("filled at 1578.00"). The tempting
+shortcut is a `price` (and `quantity`, `symbol`, …) column on `notifications` so
+the row is self-contained. That would be a transitive dependency on `orders` and
+a second, un-reconcilable source of truth: correct an order's executed price and
+every notification that copied it is now wrong, with nothing to force them back
+into step.
+
+Instead `notifications.related_order_id` (and `account_id`) **reference** the
+order the notice concerns; the canonical `price`, `quantity`, `executed_price`
+and `status` stay only on `orders`. The free-text `message` is a rendered body
+(what was sent), not a queried fact — no report reads a number out of it. The
+row also carries a unique `event_id` so a replayed at-least-once trade event is
+delivered at most once. This keeps `notifications` in 3NF and removes the drift
+risk a copied price column would introduce.
+
 ## Money and quantity types
 
 `DECIMAL(18,2)` for money everywhere (never binary floating point, which cannot

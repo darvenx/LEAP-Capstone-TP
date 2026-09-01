@@ -20,6 +20,8 @@ erDiagram
     users ||--o{ price_alerts : "sets"
     instruments ||--o{ price_alerts : "alerted on"
     users ||--o{ notifications : "receives"
+    accounts ||--o{ notifications : "about"
+    orders ||--o{ notifications : "triggers"
     users ||--o{ audit_logs : "acts in"
 
     users {
@@ -102,7 +104,11 @@ erDiagram
     notifications {
         uuid notification_id PK
         uuid user_id FK
+        bigint account_id FK "nullable"
+        uuid related_order_id FK "nullable, points at the order"
+        varchar event_id UK "idempotency, nullable"
         notification_status status
+        text failure_reason "only when FAILED"
     }
     audit_logs {
         uuid audit_id PK

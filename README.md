@@ -8,9 +8,10 @@ backbone, auth, UI, extensions) slot in as sibling folders.
 ```
 Our-project/
 ├── .env / .env.example / .gitignore   # shared local config (secrets git-ignored)
-├── docker-compose.yml                 # one-command Postgres (Sprint 3 schema + seed)
+├── docker-compose.yml                 # one-command Postgres (Sprint 3 schema + .sql seed)
 ├── infra/postgres/                    # container init hook (mounts migrations + seed)
-├── sprint-03-trade-database/          # migrations, seed (.sql), sql evidence, design docs
+├── sprint-03-trade-database/          # migrations, seed (.sql + csv/), Dockerfile, sql evidence, design docs
+│   ├── Dockerfile / scripts/setup.sh  # one-line self-building Postgres (CSV seed + probes)
 ├── sprint-04-analytics-etl/           # installable Python ETL: extract/transform/load + dashboard
 └── docs/                              # analysis, plans, progress, reviews
 ```
@@ -34,51 +35,63 @@ cp .env.example .env        # Windows PowerShell: Copy-Item .env.example .env
 
 ## Sprint 3 — build and verify the trade database
 
-Choose **one** path.
+Choose **one** path. All of them read `POSTGRES_*` from the repository-root
+`.env` (no password prompt), create the schema, seed from CSV, and run
+`sprint-03-trade-database/probes/`.
 
-### Path A — Docker (no local Postgres needed)
+### Path A — Docker, one line (self-building image, CSV seed + probes)
+
+From `sprint-03-trade-database/`, one command builds a Postgres 16 image and
+runs a fully migrated, CSV-seeded, probe-tested container:
 
 ```bash
-docker compose up -d
+./scripts/setup.sh            # Linux / macOS / Git Bash / WSL
+```
+
+```powershell
+cd sprint-03-trade-database   # Windows PowerShell
+./scripts/setup.ps1
+```
+
+It builds from `sprint-03-trade-database/Dockerfile`, applies every migration,
+bulk-loads `seed/csv/*.csv` with `COPY`, then runs `probes/`. Connect on
+`localhost:5432` (`psql -h localhost -U postgres -d trading`). Rebuild with
+`docker rm -f leap-trade-db` then re-run the script.
+
+### Path B — Docker Compose (mounts the tree, CSV seed + probes)
+
+From the repository root (`Our-project/`):
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+```powershell
+docker compose down -v; docker compose up -d
 ```
 
 This starts Postgres 16 and, on the first start (empty volume), applies every
-migration then every seed file in order. Verify:
+migration, bulk-loads `seed/csv/`, and runs `probes/`. Watch the probe output
+with `docker compose logs postgres`. Rebuild from scratch with the same
+`down -v` then `up -d`.
 
-```bash
-# the six named queries
-docker compose exec -T postgres psql -U postgres -d trading -f /sprint-03/sql/verify_queries.sql
-# the two required rejections (23505 duplicate key, 23503 FK violation)
-docker compose exec -T postgres psql -U postgres -d trading -v ON_ERROR_STOP=0 -f /sprint-03/sql/failure_tests.sql
-```
-
-Rebuild from scratch: `docker compose down -v && docker compose up -d`.
-
-### Path B — local Postgres (one command)
+### Path C — local Postgres (one command, CSV seed + probes)
 
 With `psql` on your PATH and a running Postgres, from
-`sprint-03-trade-database/`:
+`sprint-03-trade-database/`. Recreates the database, so existing data in
+`TARGET_DATABASE` / `POSTGRES_DB` is dropped:
 
 ```bash
-# create the database if needed, then migrate + seed in one go
-./scripts/create_db.sh              # or, if the DB already exists: ./scripts/apply.sh
+./scripts/create_db.sh
 ```
-
-Windows PowerShell equivalent (DB already exists):
 
 ```powershell
 cd sprint-03-trade-database
-./scripts/apply.ps1
+./scripts/create_db.ps1
 ```
 
-The apply command reads `TARGET_DATABASE` (falling back to `POSTGRES_DB` from
-`.env`), applies `migrations/*.sql` then `seed/*.sql` with
-`psql -v ON_ERROR_STOP=1`, and exits non-zero on any failure. Then verify:
-
-```bash
-psql "$TARGET_DATABASE" -v ON_ERROR_STOP=1 -f sql/verify_queries.sql
-psql "$TARGET_DATABASE" -v ON_ERROR_STOP=0 -f sql/failure_tests.sql
-```
+`scripts/apply.sh` / `apply.ps1` still exist if you already have an empty
+database and want the `.sql` seed without recreating the DB or running probes.
 
 Design docs: `sprint-03-trade-database/DESIGN.md`, `design/er-diagram.md`,
 `design/indexes.md`, `design/normalisation.md`.

@@ -42,7 +42,13 @@ fi
 export PGUSER="${PGUSER:-${POSTGRES_USER:-postgres}}"
 export PGPASSWORD="${PGPASSWORD:-${POSTGRES_PASSWORD:-}}"
 
-PSQL=(psql -v ON_ERROR_STOP=1 --no-psqlrc -d "$TARGET_DB")
+export PGHOST="${PGHOST:-localhost}"
+if [ -z "${PGPASSWORD:-}" ]; then
+  echo "ERROR: set POSTGRES_PASSWORD in the repository-root .env (password prompt is disabled)" >&2
+  exit 2
+fi
+
+PSQL=(psql -v ON_ERROR_STOP=1 --no-psqlrc --no-password -d "$TARGET_DB")
 
 cd "$REPO_DB_DIR"
 
