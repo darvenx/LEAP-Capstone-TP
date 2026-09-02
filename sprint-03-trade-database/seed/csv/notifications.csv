@@ -1,0 +1,11 @@
+user_id,account_id,related_order_id,event_id,title,message,status,failure_reason,sent_at,provider_reference,created_at
+10000000-0000-0000-0000-000000000001,1,30000000-0000-0000-0000-000000000001,evt-fill-0001,Order filled,"Your BUY order for 40 INFY.NS was filled at 1578.00.",SENT,,2026-03-04T09:20:10Z,prov-0001,2026-03-04T09:20:06Z
+10000000-0000-0000-0000-000000000001,,,evt-alert-0001,Price alert,"INFY.NS crossed above your 1650.00 alert.",PENDING,,,,2026-06-30T04:00:00Z
+10000000-0000-0000-0000-000000000002,2,30000000-0000-0000-0000-000000000007,evt-fill-0007,Order filled,"Your BUY order for 50 HDFCBANK.NS was filled at 1650.00.",SENT,,2026-03-18T10:30:10Z,prov-0002,2026-03-18T10:30:06Z
+10000000-0000-0000-0000-000000000002,2,30000000-0000-0000-0000-000000000010,evt-cancel-0010,Order cancelled,"Your order for 30 TATAMOTORS.BO was cancelled.",SENT,,2026-06-20T15:00:05Z,prov-0003,2026-06-20T15:00:01Z
+10000000-0000-0000-0000-000000000003,3,,,Welcome,"Welcome to the Enterprise Trading Platform.",SENT,,2026-01-07T04:05:00Z,prov-0004,2026-01-07T04:00:10Z
+10000000-0000-0000-0000-000000000004,4,30000000-0000-0000-0000-000000000015,evt-reject-0015,Order rejected,"Your BUY order for 5 RELIANCE.NS was rejected: insufficient funds.",FAILED,email send timeout,,prov-0005,2026-07-01T07:15:02Z
+10000000-0000-0000-0000-000000000005,5,,,Statement ready,"Your monthly statement is ready to view.",PENDING,,,,2026-07-01T04:00:00Z
+10000000-0000-0000-0000-000000000006,6,30000000-0000-0000-0000-000000000013,evt-fill-0013,Order filled,"Your BUY order for 20 AAPL was filled at 190.00.",SENT,,2026-04-01T15:30:08Z,prov-0006,2026-04-01T15:30:04Z
+10000000-0000-0000-0000-000000000007,7,,,Account suspended,"Your account has been suspended. Please contact support.",SENT,,2026-06-01T04:05:00Z,prov-0007,2026-06-01T04:00:05Z
+10000000-0000-0000-0000-000000000009,9,,,Account closed,"Your account has been closed. History remains available.",SENT,,2026-05-20T04:05:00Z,prov-0008,2026-05-20T04:00:05Z

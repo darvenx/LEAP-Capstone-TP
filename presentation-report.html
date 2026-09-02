@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>LEAP Capstone: Trading Platform Progress Report</title>
+<style>
+  :root{
+    --bg:#0f1220; --panel:#171b2e; --panel2:#1d2238; --border:#2b3151;
+    --text:#e8eaf6; --muted:#9aa3c7; --accent:#5b8cff; --accent2:#39d0b8;
+    --warn:#f2b84b; --code-bg:#0c0e1a;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.55;
+  }
+  header.hero{
+    padding:64px 8vw 40px; background:radial-gradient(circle at 20% 20%, #22284a 0%, #0f1220 60%);
+    border-bottom:1px solid var(--border);
+  }
+  header.hero h1{font-size:2.4rem; margin:0 0 8px; letter-spacing:-0.02em;}
+  header.hero p.sub{color:var(--muted); font-size:1.1rem; margin:0 0 24px; max-width:70ch;}
+  .badges{display:flex; gap:10px; flex-wrap:wrap;}
+  .badge{background:var(--panel2); border:1px solid var(--border); color:var(--accent2);
+    padding:5px 12px; border-radius:999px; font-size:0.82rem; font-weight:600;}
+  nav.toc{
+    position:sticky; top:0; z-index:10; display:flex; gap:2px; overflow-x:auto;
+    background:rgba(15,18,32,0.96); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--border); padding:0 8vw;
+  }
+  nav.toc a{
+    color:var(--muted); text-decoration:none; font-size:0.85rem; font-weight:600;
+    padding:14px 14px; white-space:nowrap; border-bottom:2px solid transparent;
+  }
+  nav.toc a:hover{color:var(--text); border-color:var(--accent);}
+  main{padding:10px 8vw 80px; max-width:1300px; margin:0 auto;}
+  section{padding:56px 0; border-bottom:1px solid var(--border);}
+  section:last-of-type{border-bottom:none;}
+  h2{font-size:1.7rem; margin:0 0 6px; display:flex; align-items:center; gap:10px;}
+  h2 .tag{font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em;
+    background:var(--accent); color:#fff; padding:3px 9px; border-radius:6px; font-weight:700;}
+  h3{font-size:1.15rem; color:var(--accent2); margin:30px 0 10px;}
+  p{color:#c9cde6;}
+  .lede{color:var(--muted); font-size:1.02rem; max-width:90ch; margin-top:0;}
+  .grid2{display:grid; grid-template-columns:1.05fr 0.95fr; gap:28px; align-items:start;}
+  .grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr;}}
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:18px 20px;}
+  .stat{background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:14px 16px; text-align:center;}
+  .stat .n{font-size:1.6rem; font-weight:800; color:var(--accent2);}
+  .stat .l{font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.04em;}
+  table{width:100%; border-collapse:collapse; margin:14px 0; font-size:0.92rem;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--border);}
+  th{color:var(--accent2); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.04em;}
+  code{background:var(--code-bg); padding:2px 6px; border-radius:4px; font-size:0.88em; color:#ffd479;}
+  pre{
+    background:var(--code-bg); border:1px solid var(--border); border-radius:10px;
+    padding:16px 18px; overflow-x:auto; font-size:0.83rem; line-height:1.5;
+  }
+  pre code{background:none; padding:0; color:#d7dcf5;}
+  .kw{color:#c586c0;} .str{color:#ce9178;} .cm{color:#6a9955;} .fn{color:#dcdcaa;} .tp{color:#4ec9b0;}
+  figure{margin:16px 0; text-align:center;}
+  figure img{max-width:100%; border-radius:10px; border:1px solid var(--border); background:#fff;}
+  figcaption{color:var(--muted); font-size:0.82rem; margin-top:8px;}
+  .pass{color:var(--accent2); font-weight:700;}
+  .pill-row{display:flex; gap:8px; flex-wrap:wrap; margin:10px 0;}
+  .pill{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:4px 10px; font-size:0.8rem; color:var(--muted);}
+  details{background:var(--panel2); border:1px solid var(--border); border-radius:10px; padding:10px 16px; margin:10px 0;}
+  summary{cursor:pointer; font-weight:600; color:var(--accent);}
+  iframe.embed{width:100%; height:560px; border:1px solid var(--border); border-radius:10px; background:#fff;}
+  footer{padding:30px 8vw 60px; color:var(--muted); font-size:0.85rem; text-align:center;}
+  .arch{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:0.85rem; color:var(--muted); margin:14px 0;}
+  .arch .box{background:var(--panel2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; color:var(--text); font-weight:600;}
+  .arch .arrow{color:var(--accent);}
+  @media print{ nav.toc{position:static;} body{background:#fff; color:#000;} }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>Building a Trading Platform, One Contract at a Time</h1>
+  <p class="sub">Three completed sprints of a multi-sprint capstone: a normalised trade
+  database, an analytics/ETL pipeline with an offline dashboard, and a dependency-free
+  domain engine enforcing eight business rules, each one built so the next sprint can
+  build on it without rewriting it.</p>
+  <div class="badges">
+    <span class="badge">Sprint 3: Trade Database (PostgreSQL)</span>
+    <span class="badge">Sprint 4: Analytics ETL (Python / DuckDB)</span>
+    <span class="badge">Sprint 5: Domain Engine (Java 21)</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#overview">Overview</a>
+  <a href="#sprint3">Sprint 3 · Database</a>
+  <a href="#sprint4">Sprint 4 · Analytics ETL</a>
+  <a href="#sprint5">Sprint 5 · Domain Engine</a>
+  <a href="#quality">Quality &amp; Testing</a>
+  <a href="#next">What's Next</a>
+</nav>
+
+<main>
+
+<section id="overview">
+  <h2>Overview <span class="tag">Why it fits together</span></h2>
+  <p class="lede">Each sprint hands the next one a contract instead of a codebase to
+  untangle: the database's enums and identifiers reappear unchanged in the domain
+  model; the domain model's business rules are what the Sprint 6 API will wrap in
+  HTTP; the ETL pipeline's extract/transform/load shape is what Sprint 7 repoints at
+  the operational database. Nothing here is a stub; every deliverable below is
+  implemented, tested and running.</p>
+  <div class="arch">
+    <span class="box">Trade Database<br><small>(schema + integrity)</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">Domain Engine<br><small>(business rules)</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">Sprint 6+ API<br><small>(transport, not built yet)</small></span>
+  </div>
+  <div class="arch">
+    <span class="box">Fauxnance Market API</span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">Analytics ETL<br><small>(extract &middot; transform &middot; load)</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">DuckDB + Offline Dashboard</span>
+  </div>
+  <div class="grid3">
+    <div class="stat"><div class="n">16</div><div class="l">SQL migrations, immutable + numbered</div></div>
+    <div class="stat"><div class="n">144</div><div class="l">Automated tests (JUnit + pytest), all green</div></div>
+    <div class="stat"><div class="n">8</div><div class="l">Order placement business rules</div></div>
+  </div>
+</section>
+
+<section id="sprint3">
+  <h2>Sprint 3 <span class="tag">Trade Database</span></h2>
+  <p class="lede">A normalised PostgreSQL schema: 16 numbered migrations, one concern
+  per file, applied in order and never edited after review. Two identical one-command
+  setup paths (Docker and local psql) seed the same rows and run a probe suite of
+  named queries plus required rejection tests.</p>
+
+  <h3>Entity relationship model</h3>
+  <figure>
+    <img src="sprint-03-trade-database/design/er-diagram.png" alt="ER diagram of the trade database">
+    <figcaption>Core trading tables (users, accounts, instruments, orders, positions,
+    cash_ledger, portfolio_snapshots) plus the Sprint 10 extension tables
+    (watchlists, price_alerts, notifications, audit_logs), retained now because
+    they cost nothing to model up front.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;">Cross-row integrity, enforced in the database</h3>
+      <p>Single-column <code>CHECK</code> constraints can't stop an order being opened
+      against a suspended account, or a working order referencing a delisted
+      instrument, so those rules are triggers, meaning no future service can violate
+      them even through a bug.</p>
+      <pre><code><span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">enforce_order_is_allowed</span>()
+<span class="kw">RETURNS</span> TRIGGER <span class="kw">LANGUAGE</span> plpgsql <span class="kw">AS</span> $$
+<span class="kw">BEGIN</span>
+    <span class="kw">SELECT</span> status <span class="kw">INTO</span> account_state
+    <span class="kw">FROM</span> accounts <span class="kw">WHERE</span> id = NEW.account_id;
+
+    <span class="kw">IF</span> account_state &lt;&gt; <span class="str">'ACTIVE'</span> <span class="kw">THEN</span>
+        <span class="kw">RAISE EXCEPTION</span> <span class="str">'orders require an ACTIVE account'</span>
+            <span class="kw">USING</span> ERRCODE = <span class="str">'23514'</span>;
+    <span class="kw">END IF</span>;
+    <span class="cm">-- terminal orders may keep a since-delisted instrument</span>
+    <span class="kw">IF</span> NEW.status &lt;&gt; <span class="str">'NEW'</span> <span class="kw">THEN RETURN</span> NEW; <span class="kw">END IF</span>;
+
+    <span class="kw">SELECT</span> tradable <span class="kw">INTO</span> instrument_tradable
+    <span class="kw">FROM</span> instruments <span class="kw">WHERE</span> id = NEW.instrument_id;
+    <span class="kw">IF NOT</span> instrument_tradable <span class="kw">THEN</span>
+        <span class="kw">RAISE EXCEPTION</span> <span class="str">'a NEW order requires a tradable instrument'</span>
+            <span class="kw">USING</span> ERRCODE = <span class="str">'23514'</span>;
+    <span class="kw">END IF</span>;
+    <span class="kw">RETURN</span> NEW;
+<span class="kw">END</span>; $$;</code></pre>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Indexes justified by real queries</h3>
+      <p>No index exists without a named query behind it, documented in
+      <code>design/indexes.md</code> so a reviewer can check the justification, not
+      just the existence.</p>
+      <table>
+        <tr><th>Query</th><th>Index</th></tr>
+        <tr><td>Blotter: open orders for one account, newest first</td><td><code>(account_id, created_on DESC)</code></td></tr>
+        <tr><td>Order history: last 50, any state</td><td>same composite index</td></tr>
+        <tr><td>Sprint 7 nightly extract: orders since a timestamp</td><td><code>(created_on)</code></td></tr>
+        <tr><td>Portfolio panel: positions for an account</td><td><code>(account_id)</code></td></tr>
+      </table>
+      <h3>Design discipline</h3>
+      <ul>
+        <li>Money is <code>decimal</code>, never floating point.</li>
+        <li>Delisting an instrument is a flag, never a row deletion, so order history stays intact.</li>
+        <li>Idempotency key on <code>orders</code> is a real <code>UNIQUE</code> constraint (23505), not just an app-layer check.</li>
+        <li>Two account identifiers on purpose: a numeric key for the API/JWT, a string reference for support calls.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="sprint4">
+  <h2>Sprint 4 <span class="tag">Analytics ETL Pipeline</span></h2>
+  <p class="lede">An installable Python package that pulls end-of-day candles from the
+  Fauxnance market API, cleans them against six named data-quality defects, loads them
+  idempotently into DuckDB, and renders an offline HTML dashboard backing three
+  evidence-based business claims. Built so Sprint 7 repoints the same
+  extract/transform/load shape at the operational database: the source changes, the
+  shape doesn't.</p>
+
+  <div class="arch">
+    <span class="box">extract.py<br><small>network only</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">transform.py<br><small>pure, no I/O</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">load.py<br><small>DuckDB write only</small></span>
+    <span class="arrow">&#8594;</span>
+    <span class="box">dashboard.py<br><small>offline HTML + Plotly</small></span>
+  </div>
+
+  <h3>Six malformed-data defects, six deliberate dispositions</h3>
+  <table>
+    <tr><th>#</th><th>Defect</th><th>Disposition</th></tr>
+    <tr><td>1</td><td>Duplicate date</td><td>Dedupe: keep first, quarantine the later copy</td></tr>
+    <tr><td>2</td><td>Missing <code>close</code></td><td>Drop &amp; quarantine (close is the charted measure)</td></tr>
+    <tr><td>3</td><td>Non-numeric price</td><td>Drop &amp; quarantine: cannot coerce safely</td></tr>
+    <tr><td>4</td><td><code>high &lt; low</code></td><td>Drop &amp; quarantine: an impossible bar</td></tr>
+    <tr><td>5</td><td>Negative volume</td><td><strong>Kept</strong>: volume nulled, OHLC row survives</td></tr>
+    <tr><td>6</td><td>Non-ISO date (<code>DD/MM/YYYY</code>)</td><td>Drop &amp; quarantine: ambiguous format</td></tr>
+  </table>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;">Pure transform, one reason code per outcome</h3>
+      <pre><code><span class="kw">def</span> <span class="fn">_parse_iso_date</span>(value: Any) -&gt; dt.date | <span class="kw">None</span>:
+    <span class="cm"># date.fromisoformat is strict, rejects 09/07/2026</span>
+    <span class="kw">try</span>:
+        <span class="kw">return</span> dt.date.fromisoformat(value)
+    <span class="kw">except</span> ValueError:
+        <span class="kw">return None</span>
+
+<span class="kw">def</span> <span class="fn">_clean_volume</span>(value: Any) -&gt; int | <span class="kw">None</span>:
+    <span class="str">"""Volume is nulled when negative or absent."""</span>
+    <span class="kw">if</span> value <span class="kw">is None</span> <span class="kw">or</span> isinstance(value, bool):
+        <span class="kw">return None</span>
+    v = int(value)
+    <span class="kw">return</span> v <span class="kw">if</span> v &gt;= 0 <span class="kw">else None</span>  <span class="cm"># row kept, volume dropped</span></code></pre>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Idempotent load: natural key, not row count</h3>
+      <pre><code><span class="cm">"""Re-running the same frame does not double-count:
+the natural key for the batch is deleted before insert."""</span>
+
+TABLE = <span class="str">"market_candles"</span>
+_CREATE_TABLE = <span class="str">f"""
+CREATE TABLE IF NOT EXISTS {TABLE} (
+    symbol      VARCHAR       NOT NULL,
+    trade_date  DATE          NOT NULL,
+    close       DECIMAL(18,4) NOT NULL,
+    volume      BIGINT,
+    PRIMARY KEY (symbol, trade_date)
+);
+"""</span></code></pre>
+      <p>Same natural-key merge shape Sprint 7 reuses for <code>fact_trades</code>,
+      keyed on <code>source_order_id</code> instead of <code>(symbol, trade_date)</code>.</p>
+    </div>
+  </div>
+
+  <h3>Three claims, evidence-checked against the cleaned data</h3>
+  <table>
+    <tr><th>#</th><th>Claim</th></tr>
+    <tr><td>1</td><td>Reliance (NSE) closed the fortnight up <strong>+1.08%</strong> (2876.90 &rarr; 2907.95), narrowly ahead of Infosys's <strong>+1.03%</strong>.</td></tr>
+    <tr><td>2</td><td>Infosys traded more heavily: <strong>~7.54M</strong> avg daily volume vs Reliance's <strong>~6.68M</strong>.</td></tr>
+    <tr><td>3</td><td>Infosys was more volatile intraday: <strong>~1.10%</strong> average high-low range vs Reliance's <strong>~0.99%</strong>.</td></tr>
+  </table>
+  <details>
+    <summary>Why a fourth claim was withdrawn</summary>
+    <p>An early "Tata Steel rose +3.72%" claim was withdrawn: after cleaning, only 2 of
+    7 <code>TATASTEEL.BO</code> candles in the malformed fixture survive, and a
+    two-point difference isn't a defensible trend. That withdrawal <em>is</em> the
+    point of the exercise: cleaning changes what you're allowed to claim.</p>
+  </details>
+
+  <h3>Live dashboard output</h3>
+  <p>The pipeline writes a self-contained, offline HTML dashboard (Plotly inlined, no
+  network calls to render), embedded below directly from <code>reports/report.html</code>.</p>
+  <figure>
+    <iframe class="embed" src="sprint-04-analytics-etl/reports/report.html"></iframe>
+    <figcaption>If this frame appears blank, open
+    <code>sprint-04-analytics-etl/reports/report.html</code> directly.</figcaption>
+  </figure>
+
+  <h3>Testing: 21 pytest cases, offline and network-free</h3>
+  <p>Every stage is tested in isolation: <code>transform</code> is pure so it is tested
+  hardest, <code>extract</code> is tested against a faked HTTP layer for every error
+  path the client must survive, and <code>load</code> is tested for the idempotency
+  it promises. No test opens a socket or needs a real API key.</p>
+  <table>
+    <tr><th>Test module</th><th>What it proves</th><th>Cases</th></tr>
+    <tr><td><code>test_transform.py</code></td><td>One test per malformed defect, plus dedupe, happy path, and tolerated cases (calendar gap, null volume, synthetic flag)</td><td>12</td></tr>
+    <tr><td><code>test_extract_errors.py</code></td><td>Cache hits avoid a second HTTP call; 429 stops with quota exhausted; other 4xx fails only that symbol; network errors retry then give up or recover</td><td>6</td></tr>
+    <tr><td><code>test_load_idempotent.py</code></td><td>Reloading the same frame does not double-count; a reload updates in place on the natural key; a transformed malformed frame loads cleanly</td><td>3</td></tr>
+    <tr style="font-weight:700;"><td>Total</td><td></td><td>21 passed, 0 failed</td></tr>
+  </table>
+  <pre><code>$ python -m pytest -q
+<span class="fn">.....................</span>                                                    [100%]
+<span class="tp">21 passed</span> in 3.59s</code></pre>
+</section>
+
+<section id="sprint5">
+  <h2>Sprint 5 <span class="tag">Domain Engine</span></h2>
+  <p class="lede">Plain Java 21, zero framework dependencies beyond
+  <code>jakarta.validation-api</code>, enforced by the Maven Enforcer plugin's
+  <code>bannedDependencies</code> rule so Spring, a servlet API or a JDBC driver fail
+  the build the moment one reaches the dependency tree, even transitively. This is the
+  package Sprint 6 will absorb as source into the Trade REST API, unmodified.</p>
+
+  <h3>Class model</h3>
+  <figure>
+    <img src="sprint-05-domain-engine/design/class-diagram.png" alt="UML class diagram of the domain engine">
+    <figcaption>Four entities (Account, Instrument, Order, Position), three enumerations,
+    a six-case exception hierarchy under one base type, and the
+    <code>OrderPlacementRules</code> evaluator that ties them together.</figcaption>
+  </figure>
+
+  <h3>Order placement sequence: all 8 rules, first failure wins</h3>
+  <figure>
+    <img src="sprint-05-domain-engine/design/sequence-diagram.png" alt="Sequence diagram of order placement rule evaluation">
+    <figcaption>Each rule is a guarded <code>break</code>: the moment one fails, its
+    exception is thrown and no later rule runs, so a request that breaks two rules gets
+    the code of the first one.</figcaption>
+  </figure>
+
+  <div class="grid2">
+    <div class="card">
+      <h3 style="margin-top:0;">Money never goes negative: checked before it's touched</h3>
+      <pre><code><span class="kw">public void</span> <span class="fn">debit</span>(BigDecimal amount) {
+    BigDecimal normalized = Money.normalize(requirePositive(amount));
+    <span class="kw">if</span> (cashBalance.compareTo(normalized) &lt; <span class="tp">0</span>) {
+        <span class="kw">throw new</span> InsufficientFundsException(
+            accountId, normalized, cashBalance);
+    }
+    cashBalance = cashBalance.subtract(normalized); <span class="cm">// only reached if it can afford it</span>
+}</code></pre>
+      <p>Money is <code>BigDecimal</code>, normalized to two decimal places, never a
+      <code>double</code>, so a thousand trades can't drift a balance out by a
+      hundredth of a penny.</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0;">Eight rules, evaluated in order, first failure wins</h3>
+      <pre><code><span class="kw">public</span> Order <span class="fn">evaluate</span>(PlaceOrderRequest request, Account account,
+                       Instrument instrument, Position position) {
+    <span class="cm">// Rule 1: the account must exist.</span>
+    <span class="kw">if</span> (account == <span class="kw">null</span>) <span class="kw">throw new</span> AccountNotFoundException(request.accountId());
+
+    <span class="cm">// Rule 2: the account must be ACTIVE.</span>
+    <span class="kw">if</span> (!account.isActive())
+        <span class="kw">throw new</span> AccountNotActiveException(account.getAccountId(), account.getStatus());
+
+    <span class="cm">// Rule 3: the instrument must exist and be tradable.</span>
+    <span class="kw">if</span> (instrument == <span class="kw">null</span> || !instrument.isTradable())
+        <span class="kw">throw new</span> InstrumentNotFoundException(request.symbol());
+    <span class="cm">// ... rules 4-8: quantity, price, funds, holdings, idempotency key</span>
+}</code></pre>
+    </div>
+  </div>
+
+  <h3>Business rules at a glance</h3>
+  <table>
+    <tr><th>#</th><th>Rule</th><th>Exception</th><th>Code</th></tr>
+    <tr><td>1</td><td>Account must exist</td><td>AccountNotFoundException</td><td><code>ACC-404</code></td></tr>
+    <tr><td>2</td><td>Account must be ACTIVE</td><td>AccountNotActiveException</td><td><code>ACC-403</code></td></tr>
+    <tr><td>3</td><td>Instrument must exist &amp; be tradable</td><td>InstrumentNotFoundException</td><td><code>INS-404</code></td></tr>
+    <tr><td>4</td><td>Quantity &gt; 0</td><td>OrderValidationException</td><td><code>VAL-422</code></td></tr>
+    <tr><td>5</td><td>Price &gt; 0</td><td>OrderValidationException</td><td><code>VAL-422</code></td></tr>
+    <tr><td>6</td><td>BUY: cash &ge; quantity &times; price</td><td>InsufficientFundsException</td><td><code>ORD-400</code></td></tr>
+    <tr><td>7</td><td>SELL: held &ge; order quantity</td><td>InsufficientHoldingsException</td><td><code>ORD-409</code></td></tr>
+    <tr><td>8</td><td>Idempotency key not already accepted</td><td>DuplicateOrderException</td><td><code>ORD-409</code></td></tr>
+  </table>
+</section>
+
+<section id="quality">
+  <h2>Quality &amp; Testing <span class="tag">Evidence</span></h2>
+  <p class="lede">Tests came first, per the engineering contract in every sprint: 144
+  automated tests across Java and Python, plus two live database probe scripts, all
+  passing with zero failures.</p>
+
+  <h3>Sprint 5: 123 JUnit 5 tests (Maven surefire)</h3>
+  <table>
+    <tr><th>Test class</th><th>Tests run</th><th>Result</th></tr>
+    <tr><td>AccountTest</td><td>19</td><td class="pass">PASS</td></tr>
+    <tr><td>OrderLogicTest</td><td>29</td><td class="pass">PASS</td></tr>
+    <tr><td>PlaceOrderRequestValidationTest</td><td>26</td><td class="pass">PASS</td></tr>
+    <tr><td>OrderTest</td><td>10</td><td class="pass">PASS</td></tr>
+    <tr><td>ExceptionHierarchyTest</td><td>10</td><td class="pass">PASS</td></tr>
+    <tr><td>PositionTest</td><td>9</td><td class="pass">PASS</td></tr>
+    <tr><td>InstrumentTest</td><td>6</td><td class="pass">PASS</td></tr>
+    <tr><td>InMemoryIdempotencyKeyRegistryTest</td><td>5</td><td class="pass">PASS</td></tr>
+    <tr><td>MoneyTest</td><td>5</td><td class="pass">PASS</td></tr>
+    <tr><td>DomainEnumerationsTest</td><td>4</td><td class="pass">PASS</td></tr>
+    <tr style="font-weight:700;"><td>Total</td><td>123</td><td class="pass">0 failures, 0 errors</td></tr>
+  </table>
+
+  <h3>Sprint 4: 21 pytest cases</h3>
+  <p>See the full breakdown in the Sprint 4 section above; summary below.</p>
+  <table>
+    <tr><th>Module</th><th>Tests run</th><th>Result</th></tr>
+    <tr><td>test_transform.py</td><td>12</td><td class="pass">PASS</td></tr>
+    <tr><td>test_extract_errors.py</td><td>6</td><td class="pass">PASS</td></tr>
+    <tr><td>test_load_idempotent.py</td><td>3</td><td class="pass">PASS</td></tr>
+    <tr style="font-weight:700;"><td>Total</td><td>21</td><td class="pass">0 failed</td></tr>
+  </table>
+
+  <h3>Sprint 3: live database probes</h3>
+  <p>The schema is checked by running real SQL against the loaded seed, not just by
+  code review: six named queries proving every access pattern the brief lists, and
+  two required rejections proving the constraints actually refuse bad data.</p>
+  <table>
+    <tr><th>Probe</th><th>Proves</th></tr>
+    <tr><td><code>verify_queries.sql</code> Q1/Q2</td><td>Blotter and order history for one account, newest first</td></tr>
+    <tr><td><code>verify_queries.sql</code> Q3</td><td>Portfolio panel: everything one account holds, with average cost</td></tr>
+    <tr><td><code>verify_queries.sql</code> Q4</td><td>Sprint 7 nightly extract: every order created since a timestamp</td></tr>
+    <tr><td><code>verify_queries.sql</code> Q5/Q6</td><td>Resolving an account from its support-facing reference and related lookups</td></tr>
+    <tr><td><code>failure_tests.sql</code> 23505</td><td>Duplicate idempotency key is refused (business rule 8)</td></tr>
+    <tr><td><code>failure_tests.sql</code> 23503</td><td>An order against a non-existent account is refused by the foreign key</td></tr>
+  </table>
+
+  <div class="pill-row">
+    <span class="pill">Sprint 3: <code>psql -f probes/verify_queries.sql</code> and <code>probes/failure_tests.sql</code></span>
+    <span class="pill">Sprint 4: <code>python -m pytest</code>, 21 passed in 3.59s</span>
+    <span class="pill">Sprint 5: <code>mvn test</code>, JUnit 5 + surefire reports, 123 passed</span>
+  </div>
+</section>
+
+<section id="next">
+  <h2>What's Next <span class="tag">Roadmap</span></h2>
+  <div class="grid3">
+    <div class="card"><strong>Sprint 6</strong><p>Spring Boot Trade REST API wrapping this domain package as source, one HTTP request per order placement, optimistic locking against the version the domain reports.</p></div>
+    <div class="card"><strong>Sprint 7</strong><p>Trade Executor settles orders against live quotes in a separate process; the same ETL extract/transform/load shape repoints at <code>fact_trades</code>.</p></div>
+    <div class="card"><strong>Sprint 9/10</strong><p>Angular UI generated from <code>contracts/trade-api.yaml</code>; watchlists, alerts and notifications extension tables already modelled in Sprint 3.</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer>LEAP Capstone: Trading Platform. Sprints 3 to 5. Generated for the project review presentation</footer>
+
+</body>
+</html>

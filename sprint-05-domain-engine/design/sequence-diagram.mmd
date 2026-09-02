@@ -1,0 +1,54 @@
+sequenceDiagram
+    actor Caller as Caller (Sprint 6 controller / Sprint 7 Trade Executor)
+    participant Rules as OrderPlacementRules
+    participant Acc as Account
+    participant Ins as Instrument
+    participant Pos as Position
+    participant Idem as IdempotencyKeyRegistry
+    participant Ord as Order
+
+    Caller->>Rules: evaluate(request, account, instrument, position)
+
+    break Rule 1: account is null
+        Rules-->>Caller: throw AccountNotFoundException (ACC-404)
+    end
+
+    Rules->>Acc: isActive()
+    break Rule 2: account is not ACTIVE
+        Rules-->>Caller: throw AccountNotActiveException (ACC-403)
+    end
+
+    Rules->>Ins: isTradable()
+    break Rule 3: instrument is null or not tradable
+        Rules-->>Caller: throw InstrumentNotFoundException (INS-404)
+    end
+
+    break Rule 4: quantity is null or <= 0
+        Rules-->>Caller: throw OrderValidationException (VAL-422, field=quantity)
+    end
+
+    break Rule 5: price is null or <= 0
+        Rules-->>Caller: throw OrderValidationException (VAL-422, field=price)
+    end
+
+    alt side is BUY
+        Rules->>Acc: canAfford(quantity * price)
+        break Rule 6: cannot afford
+            Rules-->>Caller: throw InsufficientFundsException (ORD-400)
+        end
+    else side is SELL
+        Rules->>Pos: getQuantity()
+        break Rule 7: held quantity < order quantity
+            Rules-->>Caller: throw InsufficientHoldingsException (ORD-409)
+        end
+    end
+
+    Rules->>Idem: register(idempotencyKey)
+    break Rule 8: key already registered
+        Rules-->>Caller: throw DuplicateOrderException (ORD-409)
+    end
+
+    Note over Rules,Ord: All eight rules passed - the order is accepted, not yet executed.
+    Rules->>Ord: receive(accountId, symbol, side, quantity, price, idempotencyKey)
+    Ord-->>Rules: order (status = NEW)
+    Rules-->>Caller: return order (status = NEW)
