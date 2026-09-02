@@ -79,11 +79,7 @@
 <body>
 
 <header class="hero">
-  <h1>Building a Trading Platform, One Contract at a Time</h1>
-  <p class="sub">Three completed sprints of a multi-sprint capstone: a normalised trade
-  database, an analytics/ETL pipeline with an offline dashboard, and a dependency-free
-  domain engine enforcing eight business rules, each one built so the next sprint can
-  build on it without rewriting it.</p>
+  <h1>LEAP Trading Platform</h1>
   <div class="badges">
     <span class="badge">Sprint 3: Trade Database (PostgreSQL)</span>
     <span class="badge">Sprint 4: Analytics ETL (Python / DuckDB)</span>
@@ -103,13 +99,7 @@
 <main>
 
 <section id="overview">
-  <h2>Overview <span class="tag">Why it fits together</span></h2>
-  <p class="lede">Each sprint hands the next one a contract instead of a codebase to
-  untangle: the database's enums and identifiers reappear unchanged in the domain
-  model; the domain model's business rules are what the Sprint 6 API will wrap in
-  HTTP; the ETL pipeline's extract/transform/load shape is what Sprint 7 repoints at
-  the operational database. Nothing here is a stub; every deliverable below is
-  implemented, tested and running.</p>
+  <h2>Overview </h2>
   <div class="arch">
     <span class="box">Trade Database<br><small>(schema + integrity)</small></span>
     <span class="arrow">&#8594;</span>
@@ -133,80 +123,15 @@
 
 <section id="sprint3">
   <h2>Sprint 3 <span class="tag">Trade Database</span></h2>
-  <p class="lede">A normalised PostgreSQL schema: 16 numbered migrations, one concern
-  per file, applied in order and never edited after review. Two identical one-command
-  setup paths (Docker and local psql) seed the same rows and run a probe suite of
-  named queries plus required rejection tests.</p>
 
   <h3>Entity relationship model</h3>
   <figure>
     <img src="sprint-03-trade-database/design/er-diagram.png" alt="ER diagram of the trade database">
-    <figcaption>Core trading tables (users, accounts, instruments, orders, positions,
-    cash_ledger, portfolio_snapshots) plus the Sprint 10 extension tables
-    (watchlists, price_alerts, notifications, audit_logs), retained now because
-    they cost nothing to model up front.</figcaption>
   </figure>
-
-  <div class="grid2">
-    <div class="card">
-      <h3 style="margin-top:0;">Cross-row integrity, enforced in the database</h3>
-      <p>Single-column <code>CHECK</code> constraints can't stop an order being opened
-      against a suspended account, or a working order referencing a delisted
-      instrument, so those rules are triggers, meaning no future service can violate
-      them even through a bug.</p>
-      <pre><code><span class="kw">CREATE OR REPLACE FUNCTION</span> <span class="fn">enforce_order_is_allowed</span>()
-<span class="kw">RETURNS</span> TRIGGER <span class="kw">LANGUAGE</span> plpgsql <span class="kw">AS</span> $$
-<span class="kw">BEGIN</span>
-    <span class="kw">SELECT</span> status <span class="kw">INTO</span> account_state
-    <span class="kw">FROM</span> accounts <span class="kw">WHERE</span> id = NEW.account_id;
-
-    <span class="kw">IF</span> account_state &lt;&gt; <span class="str">'ACTIVE'</span> <span class="kw">THEN</span>
-        <span class="kw">RAISE EXCEPTION</span> <span class="str">'orders require an ACTIVE account'</span>
-            <span class="kw">USING</span> ERRCODE = <span class="str">'23514'</span>;
-    <span class="kw">END IF</span>;
-    <span class="cm">-- terminal orders may keep a since-delisted instrument</span>
-    <span class="kw">IF</span> NEW.status &lt;&gt; <span class="str">'NEW'</span> <span class="kw">THEN RETURN</span> NEW; <span class="kw">END IF</span>;
-
-    <span class="kw">SELECT</span> tradable <span class="kw">INTO</span> instrument_tradable
-    <span class="kw">FROM</span> instruments <span class="kw">WHERE</span> id = NEW.instrument_id;
-    <span class="kw">IF NOT</span> instrument_tradable <span class="kw">THEN</span>
-        <span class="kw">RAISE EXCEPTION</span> <span class="str">'a NEW order requires a tradable instrument'</span>
-            <span class="kw">USING</span> ERRCODE = <span class="str">'23514'</span>;
-    <span class="kw">END IF</span>;
-    <span class="kw">RETURN</span> NEW;
-<span class="kw">END</span>; $$;</code></pre>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0;">Indexes justified by real queries</h3>
-      <p>No index exists without a named query behind it, documented in
-      <code>design/indexes.md</code> so a reviewer can check the justification, not
-      just the existence.</p>
-      <table>
-        <tr><th>Query</th><th>Index</th></tr>
-        <tr><td>Blotter: open orders for one account, newest first</td><td><code>(account_id, created_on DESC)</code></td></tr>
-        <tr><td>Order history: last 50, any state</td><td>same composite index</td></tr>
-        <tr><td>Sprint 7 nightly extract: orders since a timestamp</td><td><code>(created_on)</code></td></tr>
-        <tr><td>Portfolio panel: positions for an account</td><td><code>(account_id)</code></td></tr>
-      </table>
-      <h3>Design discipline</h3>
-      <ul>
-        <li>Money is <code>decimal</code>, never floating point.</li>
-        <li>Delisting an instrument is a flag, never a row deletion, so order history stays intact.</li>
-        <li>Idempotency key on <code>orders</code> is a real <code>UNIQUE</code> constraint (23505), not just an app-layer check.</li>
-        <li>Two account identifiers on purpose: a numeric key for the API/JWT, a string reference for support calls.</li>
-      </ul>
-    </div>
-  </div>
 </section>
 
 <section id="sprint4">
   <h2>Sprint 4 <span class="tag">Analytics ETL Pipeline</span></h2>
-  <p class="lede">An installable Python package that pulls end-of-day candles from the
-  Fauxnance market API, cleans them against six named data-quality defects, loads them
-  idempotently into DuckDB, and renders an offline HTML dashboard backing three
-  evidence-based business claims. Built so Sprint 7 repoints the same
-  extract/transform/load shape at the operational database: the source changes, the
-  shape doesn't.</p>
 
   <div class="arch">
     <span class="box">extract.py<br><small>network only</small></span>
@@ -218,7 +143,7 @@
     <span class="box">dashboard.py<br><small>offline HTML + Plotly</small></span>
   </div>
 
-  <h3>Six malformed-data defects, six deliberate dispositions</h3>
+  <h3>Six transforms</h3>
   <table>
     <tr><th>#</th><th>Defect</th><th>Disposition</th></tr>
     <tr><td>1</td><td>Duplicate date</td><td>Dedupe: keep first, quarantine the later copy</td></tr>
@@ -229,44 +154,8 @@
     <tr><td>6</td><td>Non-ISO date (<code>DD/MM/YYYY</code>)</td><td>Drop &amp; quarantine: ambiguous format</td></tr>
   </table>
 
-  <div class="grid2">
-    <div class="card">
-      <h3 style="margin-top:0;">Pure transform, one reason code per outcome</h3>
-      <pre><code><span class="kw">def</span> <span class="fn">_parse_iso_date</span>(value: Any) -&gt; dt.date | <span class="kw">None</span>:
-    <span class="cm"># date.fromisoformat is strict, rejects 09/07/2026</span>
-    <span class="kw">try</span>:
-        <span class="kw">return</span> dt.date.fromisoformat(value)
-    <span class="kw">except</span> ValueError:
-        <span class="kw">return None</span>
 
-<span class="kw">def</span> <span class="fn">_clean_volume</span>(value: Any) -&gt; int | <span class="kw">None</span>:
-    <span class="str">"""Volume is nulled when negative or absent."""</span>
-    <span class="kw">if</span> value <span class="kw">is None</span> <span class="kw">or</span> isinstance(value, bool):
-        <span class="kw">return None</span>
-    v = int(value)
-    <span class="kw">return</span> v <span class="kw">if</span> v &gt;= 0 <span class="kw">else None</span>  <span class="cm"># row kept, volume dropped</span></code></pre>
-    </div>
-    <div class="card">
-      <h3 style="margin-top:0;">Idempotent load: natural key, not row count</h3>
-      <pre><code><span class="cm">"""Re-running the same frame does not double-count:
-the natural key for the batch is deleted before insert."""</span>
-
-TABLE = <span class="str">"market_candles"</span>
-_CREATE_TABLE = <span class="str">f"""
-CREATE TABLE IF NOT EXISTS {TABLE} (
-    symbol      VARCHAR       NOT NULL,
-    trade_date  DATE          NOT NULL,
-    close       DECIMAL(18,4) NOT NULL,
-    volume      BIGINT,
-    PRIMARY KEY (symbol, trade_date)
-);
-"""</span></code></pre>
-      <p>Same natural-key merge shape Sprint 7 reuses for <code>fact_trades</code>,
-      keyed on <code>source_order_id</code> instead of <code>(symbol, trade_date)</code>.</p>
-    </div>
-  </div>
-
-  <h3>Three claims, evidence-checked against the cleaned data</h3>
+  <h3>Claims</h3>
   <table>
     <tr><th>#</th><th>Claim</th></tr>
     <tr><td>1</td><td>Reliance (NSE) closed the fortnight up <strong>+1.08%</strong> (2876.90 &rarr; 2907.95), narrowly ahead of Infosys's <strong>+1.03%</strong>.</td></tr>
@@ -282,19 +171,13 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
   </details>
 
   <h3>Live dashboard output</h3>
-  <p>The pipeline writes a self-contained, offline HTML dashboard (Plotly inlined, no
-  network calls to render), embedded below directly from <code>reports/report.html</code>.</p>
   <figure>
     <iframe class="embed" src="sprint-04-analytics-etl/reports/report.html"></iframe>
-    <figcaption>If this frame appears blank, open
-    <code>sprint-04-analytics-etl/reports/report.html</code> directly.</figcaption>
   </figure>
 
-  <h3>Testing: 21 pytest cases, offline and network-free</h3>
-  <p>Every stage is tested in isolation: <code>transform</code> is pure so it is tested
-  hardest, <code>extract</code> is tested against a faked HTTP layer for every error
-  path the client must survive, and <code>load</code> is tested for the idempotency
-  it promises. No test opens a socket or needs a real API key.</p>
+  <h3>Testing with 21 pytest cases,</h3>
+  <p>Every stage is tested in isolation: <code>transform</code>. <code>extract</code> is tested against a faked HTTP layer for every error
+  path the client must survive, and <code>load</code> is tested for the idempotency.</p>
   <table>
     <tr><th>Test module</th><th>What it proves</th><th>Cases</th></tr>
     <tr><td><code>test_transform.py</code></td><td>One test per malformed defect, plus dedupe, happy path, and tolerated cases (calendar gap, null volume, synthetic flag)</td><td>12</td></tr>
@@ -302,28 +185,16 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
     <tr><td><code>test_load_idempotent.py</code></td><td>Reloading the same frame does not double-count; a reload updates in place on the natural key; a transformed malformed frame loads cleanly</td><td>3</td></tr>
     <tr style="font-weight:700;"><td>Total</td><td></td><td>21 passed, 0 failed</td></tr>
   </table>
-  <pre><code>$ python -m pytest -q
-<span class="fn">.....................</span>                                                    [100%]
-<span class="tp">21 passed</span> in 3.59s</code></pre>
 </section>
 
 <section id="sprint5">
   <h2>Sprint 5 <span class="tag">Domain Engine</span></h2>
-  <p class="lede">Plain Java 21, zero framework dependencies beyond
-  <code>jakarta.validation-api</code>, enforced by the Maven Enforcer plugin's
-  <code>bannedDependencies</code> rule so Spring, a servlet API or a JDBC driver fail
-  the build the moment one reaches the dependency tree, even transitively. This is the
-  package Sprint 6 will absorb as source into the Trade REST API, unmodified.</p>
-
-  <h3>Class model</h3>
+  <h3>UML Class DIagram</h3>
   <figure>
     <img src="sprint-05-domain-engine/design/class-diagram.png" alt="UML class diagram of the domain engine">
-    <figcaption>Four entities (Account, Instrument, Order, Position), three enumerations,
-    a six-case exception hierarchy under one base type, and the
-    <code>OrderPlacementRules</code> evaluator that ties them together.</figcaption>
   </figure>
 
-  <h3>Order placement sequence: all 8 rules, first failure wins</h3>
+  <h3>UML Sequence Diagram</h3>
   <figure>
     <img src="sprint-05-domain-engine/design/sequence-diagram.png" alt="Sequence diagram of order placement rule evaluation">
     <figcaption>Each rule is a guarded <code>break</code>: the moment one fails, its
@@ -347,7 +218,7 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
       hundredth of a penny.</p>
     </div>
     <div class="card">
-      <h3 style="margin-top:0;">Eight rules, evaluated in order, first failure wins</h3>
+      <h3 style="margin-top:0;">Eight rules, evaluated in order</h3>
       <pre><code><span class="kw">public</span> Order <span class="fn">evaluate</span>(PlaceOrderRequest request, Account account,
                        Instrument instrument, Position position) {
     <span class="cm">// Rule 1: the account must exist.</span>
