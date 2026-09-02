@@ -17,13 +17,15 @@ public final class Instrument {
     private final String displayName;
     private final String assetClass;
     private final String currency;
+    private final String exchange;
     private boolean delisted;
 
-    public Instrument(String symbol, String displayName, String assetClass, String currency) {
+    public Instrument(String symbol, String displayName, String assetClass, String currency, String exchange) {
         this.symbol = requireNonBlank(symbol, "symbol");
         this.displayName = requireNonBlank(displayName, "displayName");
         this.assetClass = requireNonBlank(assetClass, "assetClass");
         this.currency = requireNonBlank(currency, "currency");
+        this.exchange = exchange;  // nullable
         this.delisted = false;
     }
 
@@ -56,6 +58,10 @@ public final class Instrument {
 
     public String getCurrency() {
         return currency;
+    }
+
+    public String getExchange() {
+        return exchange;
     }
 
     private static String requireNonBlank(String value, String fieldName) {

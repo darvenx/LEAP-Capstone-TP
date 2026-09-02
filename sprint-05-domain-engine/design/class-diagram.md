@@ -47,7 +47,10 @@ classDiagram
         +credit(BigDecimal) void
         +getAccountId() Long
         +getAccountReference() String
+        +getHolderName() String
+        +getCurrency() String
         +getCashBalance() BigDecimal
+        +getStatus() AccountStatus
         +getVersion() long
     }
 
@@ -56,11 +59,17 @@ classDiagram
         -String displayName
         -String assetClass
         -String currency
+        -String exchange
         -boolean delisted
-        +Instrument(String, String, String, String)
+        +Instrument(String, String, String, String, String)
         +isTradable() boolean
         +delist() void
         +relist() void
+        +getSymbol() String
+        +getDisplayName() String
+        +getAssetClass() String
+        +getCurrency() String
+        +getExchange() String
     }
 
     class Position {
@@ -72,6 +81,8 @@ classDiagram
         +of(Long, String, long, BigDecimal)$ Position
         +applyBuy(long, BigDecimal) void
         +applySell(long) void
+        +getAccountId() Long
+        +getSymbol() String
         +getQuantity() long
         +getAverageCost() BigDecimal
     }
@@ -92,7 +103,16 @@ classDiagram
         +reject() void
         +cancel() void
         +isTerminal() boolean
+        +getOrderId() String
+        +getAccountId() Long
+        +getSymbol() String
+        +getSide() OrderSide
+        +getQuantity() long
+        +getLimitPrice() BigDecimal
+        +getIdempotencyKey() String
+        +getReceivedAt() Instant
         +getStatus() OrderStatus
+        +getExecutedPrice() BigDecimal
     }
 
     class Money {

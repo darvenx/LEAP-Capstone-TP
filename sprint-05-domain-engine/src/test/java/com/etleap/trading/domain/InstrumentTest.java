@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class InstrumentTest {
 
     private Instrument newInstrument() {
-        return new Instrument("FXN:ACME", "Acme Corp", "EQUITY", "USD");
+        return new Instrument("FXN:ACME", "Acme Corp", "EQUITY", "USD", "NASDAQ");
     }
 
     @Test
@@ -54,17 +54,18 @@ class InstrumentTest {
         assertEquals("Acme Corp", instrument.getDisplayName());
         assertEquals("EQUITY", instrument.getAssetClass());
         assertEquals("USD", instrument.getCurrency());
+        assertEquals("NASDAQ", instrument.getExchange());
     }
 
     @Test
     void rejectsABlankSymbol() {
         assertThrows(IllegalArgumentException.class,
-                () -> new Instrument("  ", "Acme Corp", "EQUITY", "USD"));
+                () -> new Instrument("  ", "Acme Corp", "EQUITY", "USD", "NASDAQ"));
     }
 
     @Test
     void rejectsANullDisplayName() {
         assertThrows(NullPointerException.class,
-                () -> new Instrument("FXN:ACME", null, "EQUITY", "USD"));
+                () -> new Instrument("FXN:ACME", null, "EQUITY", "USD", "NASDAQ"));
     }
 }

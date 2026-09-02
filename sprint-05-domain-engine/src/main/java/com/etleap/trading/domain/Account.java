@@ -42,7 +42,11 @@ public final class Account {
         this.accountReference = requireNonBlank(accountReference, "accountReference");
         this.holderName = requireNonBlank(holderName, "holderName");
         this.currency = requireNonBlank(currency, "currency");
-        this.cashBalance = Money.normalize(Objects.requireNonNull(cashBalance, "cashBalance must not be null"));
+        BigDecimal normalized = Money.normalize(Objects.requireNonNull(cashBalance, "cashBalance must not be null"));
+        if (normalized.signum() < 0) {
+            throw new IllegalArgumentException("cashBalance must not be negative, got: " + normalized);
+        }
+        this.cashBalance = normalized;
         this.status = Objects.requireNonNull(status, "status must not be null");
         this.version = version;
     }

@@ -38,7 +38,7 @@ class OrderLogicTest {
     }
 
     private Instrument tradableInstrument() {
-        return new Instrument(SYMBOL, "Acme Corp", "EQUITY", "USD");
+        return new Instrument(SYMBOL, "Acme Corp", "EQUITY", "USD", "NYSE");
     }
 
     private Instrument delistedInstrument() {
